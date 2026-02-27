@@ -8,6 +8,7 @@ Agentic skills for the ModCon Base Data project. These skills extend coding agen
 |-------|-------------|
 | [`croissant-validator`](skills/croissant-validator/) | Validate and generate [Croissant](https://mlcommons.org/croissant/) metadata (`croissant.json`) for ML datasets following the MLCommons Croissant 1.0 spec. |
 | [`datacard-generator`](skills/datacard-generator/) | Generate MODCON data cards for scientific datasets by introspecting a dataset directory. Supports three readiness levels: Discoverable (L1), Interoperable & Reusable (L2), and Understandable & Trustworthy (L3). |
+| [`hdmf-schema-builder`](skills/hdmf-schema-builder/) | Build [HDMF](https://hdmf.readthedocs.io/) (Hierarchical Data Modeling Framework) schema for organizing HDF5 data files for AI training and data sharing   |
 
 ## Structure
 
