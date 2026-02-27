@@ -1,0 +1,8 @@
+.DS_Store
+
+# Python caches
+__pycache__/
+*.py[cod]
+
+# Local virtual environments
+.venv*
