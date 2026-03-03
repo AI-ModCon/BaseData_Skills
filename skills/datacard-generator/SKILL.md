@@ -1,173 +1,88 @@
 ---
-name: datacard-generator
-description: Generate MODCON data cards for scientific datasets by introspecting a dataset directory. Automatically analyzes file structure, formats, schemas, and metadata to pre-fill data card fields, then prompts for missing information. Supports three readiness levels — Level 1 (Discoverable), Level 2 (Interoperable & Reusable), Level 3 (Understandable & Trustworthy). Use when the user wants to create a data card, dataset card, datacard, dataset documentation, or dataset metadata following the MODCON/Genesis datacard template. Also use when asked to document a dataset, describe a dataset for sharing, or prepare dataset metadata for a repository.
+name: generating-datacards
+description: Generates MODCON Datacard v1 documentation for scientific datasets by introspecting a directory and filling a structured template. Use when the user asks to create a datacard, dataset card, dataset documentation, dataset metadata, document a dataset, or prepare a dataset for sharing. Supports three readiness levels: Level 1 (Discoverable), Level 2 (Interoperable & Reusable), Level 3 (Understandable & Trustworthy).
 ---
 
-# Datacard Generator
+# Generating Datacards
 
-Generate structured data cards for scientific datasets using the MODCON Datacard v1 template. Introspect a dataset directory to auto-populate fields, then interactively fill remaining gaps.
+Introspect a dataset directory to auto-populate a MODCON Datacard v1, then prompt the user for anything that couldn't be inferred.
 
 ## Workflow
 
-### 1. Gather Initial Context
+Copy this checklist and check off steps as you go:
 
-Ask the user two questions:
+```
+Progress:
+- [ ] 1. Gather context (path + level)
+- [ ] 2. Introspect dataset directory
+- [ ] 3. Auto-fill the data card
+- [ ] 4. Prompt for missing fields
+- [ ] 5. Generate output file
+- [ ] 6. Review summary
+```
 
-**Dataset directory**: "What is the path to the dataset directory you want to document?"
+### 1. Gather Context
 
-**Readiness level**: "What level of detail do you want for this data card?"
-- **Level 1 — Discoverable**: Identification, basic description, file structure, keywords. Minimal metadata for discoverability.
-- **Level 2 — Interoperable & Reusable**: Level 1 + contacts, access policy, license, domain/purpose, provenance, authors, contributors, related resources, maintenance plan.
-- **Level 3 — Understandable & Trustworthy**: Level 2 + semantic/schema info, data quality details, integrity/fixity, AI/ML usage considerations, variable-level documentation.
+Ask the user:
+- **Dataset path** — directory to document
+- **Readiness level** — choose one:
+  - **Level 1 — Discoverable**: identification, description, file structure, keywords
+  - **Level 2 — Interoperable & Reusable**: Level 1 + contacts, access, license, provenance, authors, related resources
+  - **Level 3 — Understandable & Trustworthy**: Level 2 + schema, quality, integrity, AI/ML, variable docs
 
 ### 2. Introspect the Dataset Directory
 
-Explore the dataset directory to automatically extract as much information as possible:
-
-#### File structure analysis
-- List all files and directories recursively (use `find` or `ls -R`)
-- Compute total size (compressed and uncompressed)
-- Count files by extension
-- Identify data formats (CSV, JSON, Parquet, HDF5, NetCDF, FITS, ROOT, images, etc.)
-
-#### Data sampling and schema extraction
-- For tabular files (CSV, TSV, Parquet): read headers, column names, dtypes, row counts, sample rows
-- For JSON files: extract top-level keys and structure
-- For HDF5/NetCDF: list groups, datasets, attributes, dimensions
-- For image directories: count images, identify formats, check for metadata files
-- Look for existing metadata files: README, CITATION, LICENSE, metadata.json, .zenodo.json, datacite.json, croissant.json, etc.
-
-#### Identify splits
-- Look for train/test/validation directory structure or naming conventions
-
-#### Extract existing metadata
-- Parse any README files for dataset description, citation, authors
-- Parse any LICENSE files for license information
-- Parse any CITATION.cff or .bib files for citation info
-- Parse any existing metadata files for additional context
+See [reference/introspection-commands.md](reference/introspection-commands.md) for exact commands to run for file structure, schema extraction, and existing metadata files.
 
 ### 3. Auto-Fill the Data Card
 
-Read the template from `references/datacard_template_v1.md`. Using the introspection results, populate as many fields as possible:
+Read `references/datacard_template_v1.md`. Populate fields using this decision table:
 
-**Always auto-fillable:**
-- `datacard_info.datacard_creation.created_date` — today's date
-- `datacard_info.datacard_creation.creation_method` — "hybrid" (automated introspection + human input)
-- `dataset_info.data_formats` — from file extension analysis
-- `dataset_info.modalities` — inferred from file types (tabular, image, time-series, etc.)
-- `dataset_info.features` — from column headers / schema extraction
-- `dataset_info.splits` — from directory structure
-- `dataset_counts` — from file/record counts
-- `dataset_storage` — from size computation
-- Files & Structure section — from directory listing
+| Field | Auto-fill if… | Otherwise |
+|-------|--------------|-----------|
+| `datacard_creation.created_date` | Always | — |
+| `datacard_creation.creation_method` | Always → `"hybrid"` | — |
+| `dataset_info.data_formats` | File extensions found | Prompt |
+| `dataset_info.modalities` | File types recognized | Prompt |
+| `dataset_info.features` | Column headers extracted | Prompt at Level 2+ |
+| `dataset_info.splits` | train/test/val dirs found | Leave empty |
+| `dataset_counts` | File/record counts available | Prompt |
+| `dataset_storage` | `du` output available | Prompt |
+| `title` / `name` | README or metadata file found | Prompt |
+| Description | README found | Prompt |
+| Keywords | Metadata files found | Prompt at Level 1+ |
+| License | LICENSE file found | Prompt at Level 2+ |
+| Authors / contributors | CITATION.cff found | Prompt at Level 2+ |
+| Citation | .bib or CITATION.cff found | Prompt at Level 2+ |
 
-**Often auto-fillable (from existing metadata files):**
-- `title` / `name` — from README or metadata
-- Description — from README
-- Keywords — from metadata files
-- License — from LICENSE file
-- Authors / contributors — from CITATION.cff
-- Citation — from .bib or CITATION.cff
+Cross-check these fields for consistency between YAML frontmatter and markdown body: `title`/`name`, `authors`/`contributors`, `license`, `dataset_info.data_formats`, key dates.
 
-### 4. Prompt for Missing Required Fields
+### 4. Prompt for Missing Fields
 
-Present what was auto-discovered and ask the user to confirm or correct it. Then prompt for fields that could not be auto-filled, organized by the chosen level.
-
-**Level 1 required prompts** (if not auto-filled):
-- Dataset name and title
-- Project name
-- Dataset identifiers (DOI, URL, etc.)
-- Dataset description
-- Keywords
-- Release status
-
-**Level 2 additional prompts** (if not auto-filled):
-- Contact point (name, email, affiliation, ORCID)
-- Access policy (sensitivity tier, access level, authorization)
-- License (SPDX ID, name, link)
-- Science domain
-- Originating research organization
-- Funding sources
-- Dataset authors and contributors
-- Provenance (how was the data generated/collected?)
-- Related resources (datasets, publications, software)
-- Maintenance and stewardship plans
-- Key dates (collection start/end, issued, modified)
-
-**Level 3 additional prompts** (if not auto-filled):
-- Semantic/schema information (ontologies, controlled vocabularies)
-- Data quality (completeness, known issues, validation methods, noise, uncertainty)
-- Integrity (checksums, fixity policy, versioning strategy)
-- AI/ML usage (AI-ready status, training/inference allowed, bias risks, safety)
-- Variable-level documentation table (name, description, unit, value labels)
-- Missing data codes
-- Data processing steps
-
-When prompting, group related fields and provide examples. Do not overwhelm — ask 3-5 fields at a time using the AskUserQuestion tool where appropriate, or ask in natural conversation for open-ended fields.
+Present auto-discovered values for confirmation, then ask for unfilled fields. Ask **3–5 at a time**. See [reference/field-prompts.md](reference/field-prompts.md) for the full per-level field list.
 
 ### 5. Generate the Data Card
 
-Produce the completed data card as a markdown file following the template structure:
-- Output filename: `modcon_datacard_<snake_case_dataset_name>.md`
-- Include the complete YAML frontmatter with all populated metadata fields
-- Include the markdown body sections with filled-in content replacing all `[!TODO]` and `<REPLACE:...>` placeholders
-- Remove all `<INSTRUCTIONS:...>` blocks
-- Remove all `<REPLACE:...>` tags
-- Remove all `<metadata_key:...>` tags
-- Set `dataset_readiness.level` to the chosen level (1, 2, or 3)
-- For fields not applicable or not provided, use "N/A" or leave the YAML value empty — do not leave TODO markers in the output
+- **Filename**: `modcon_datacard_<snake_case_name>.md`
+- **Location**: save inside `<dataset_dir>/` by default; ask if the user prefers elsewhere
+- Replace all `[!TODO]`, `<REPLACE:...>`, `<INSTRUCTIONS:...>`, `<metadata_key:...>` — none should appear in output
+- Set `dataset_readiness.level` to chosen level
+- Unprovided fields: `"N/A"` in YAML, brief "Not provided." in markdown body
 
-Ensure YAML frontmatter values and markdown sections are consistent (information should match between the two).
+### 6. Review Summary
 
-### 6. Review and Iterate
-
-After generating the data card, present a summary of:
-- Fields that were auto-populated vs. user-provided
-- Any fields left empty or marked N/A
-- Suggestions for improving the data card (e.g., "Consider adding checksums for Level 3 readiness")
+Present:
+- ✅ Auto-populated fields
+- ✏️ User-provided fields
+- ⬜ Empty/N/A fields (with reason)
+- 💡 Suggestions for improvement
 
 Ask if the user wants to revise any sections.
 
 ## References
 
-- **Full datacard template**: See [references/datacard_template_v1.md](references/datacard_template_v1.md) — the complete MODCON Datacard v1 template with YAML frontmatter and markdown sections. Read this to understand all available fields and their structure.
-- **Datasheet reference**: See [references/datasheet_template.md](references/datasheet_template.md) — a companion datasheet format. Consult if the user mentions "datasheet" style questions or if additional context prompts from the datasheet format would help fill out the data card.
-
-## Level Summary
-
-| Level | Name | Focus | Required Sections |
-|-------|------|-------|-------------------|
-| 1 | Discoverable | Find the data | Identification, description, file structure, keywords |
-| 2 | Interoperable & Reusable | Use the data | Level 1 + contacts, access, license, provenance, authors, related resources |
-| 3 | Understandable & Trustworthy | Trust the data | Level 2 + schema, quality, integrity, AI/ML, variable docs |
-
-## OSTI Dataset Type Codes
-
-Use these when setting `dataset_info.dataset_type`:
-
-| Code | Type |
-|------|------|
-| `GD` | Genome/Genetic Data |
-| `IM` | Image |
-| `ND` | Numeric Data |
-| `SM` | Specialized Mix |
-| `FP` | Figure/Plot |
-| `I` | Interactive Resource |
-| `MM` | Multimedia |
-| `MD` | Model |
-| `AS` | Automated Software |
-| `IP` | Instrumentation and Protocols |
-| `IG` | Integrated Genomic Resources |
-
-## Sensitivity Tiers
-
-Use these when setting `access_policy.sensitivity_tier`:
-
-| Tier | Label |
-|------|-------|
-| tier0 | Open Science |
-| tier1 | Controlled Research |
-| tier2 | Proprietary |
-| tier3 | Sensitive / Export Controlled |
-| tier4 | Regulated / Personal |
-| tier5 | Classified |
+- **Template**: `references/datacard_template_v1.md`
+- **Datasheet companion**: `references/datasheet_template.md` — consult if user mentions "datasheet" questions
+- **Introspection commands**: [reference/introspection-commands.md](reference/introspection-commands.md)
+- **Per-level field prompts**: [reference/field-prompts.md](reference/field-prompts.md)
+- **Lookup tables** (OSTI codes, sensitivity tiers): [reference/lookup-tables.md](reference/lookup-tables.md)
