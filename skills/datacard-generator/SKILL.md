@@ -17,8 +17,9 @@ Progress:
 - [ ] 2. Introspect dataset directory
 - [ ] 3. Auto-fill the data card
 - [ ] 4. Prompt for missing fields
-- [ ] 5. Generate output file
-- [ ] 6. Review summary
+- [ ] 5. Validate and enrich identifiers
+- [ ] 6. Generate output file
+- [ ] 7. Review summary
 ```
 
 ### 1. Gather Context
@@ -61,7 +62,17 @@ Cross-check these fields for consistency between YAML frontmatter and markdown b
 
 Present auto-discovered values for confirmation, then ask for unfilled fields. Ask **3–5 at a time**. See [reference/field-prompts.md](reference/field-prompts.md) for the full per-level field list.
 
-### 5. Generate the Data Card
+### 5. Validate and Enrich Identifiers
+
+For every ORCID, ROR, and funding identifier collected in step 4 (or found during introspection), follow the rules in [reference/validation-lookups.md](reference/validation-lookups.md):
+
+1. **ORCID** — validate format and checksum; if valid, call the ORCID Public API to confirm the person's name and affiliation. Present resolved values to the user before writing them to the card.
+2. **ROR** — validate format; call the ROR API to resolve the organization name. Present the resolved name to the user for confirmation.
+3. **OSTI** — if an award number, DOI, or dataset landing page URL is available, query the OSTI API to pre-fill `fundings`, `originating_research_organization`, `dates.issued`, and cross-check `dataset_authors`. If no OSTI record is found, note this to the user — it may mean the dataset is not yet registered or is not DOE-funded.
+
+Only update fields the user has not already explicitly provided. Flag any validation failures (bad checksum, no API match) clearly so the user can correct them.
+
+### 6. Generate the Data Card
 
 - **Filename**: `modcon_datacard_<snake_case_name>.md`
 - **Location**: save inside `<dataset_dir>/` by default; ask if the user prefers elsewhere
@@ -69,7 +80,7 @@ Present auto-discovered values for confirmation, then ask for unfilled fields. A
 - Set `dataset_readiness.level` to chosen level
 - Unprovided fields: `"N/A"` in YAML, brief "Not provided." in markdown body
 
-### 6. Review Summary
+### 7. Review Summary
 
 Present:
 - ✅ Auto-populated fields
@@ -86,3 +97,4 @@ Ask if the user wants to revise any sections.
 - **Introspection commands**: [reference/introspection-commands.md](reference/introspection-commands.md)
 - **Per-level field prompts**: [reference/field-prompts.md](reference/field-prompts.md)
 - **Lookup tables** (OSTI codes, sensitivity tiers): [reference/lookup-tables.md](reference/lookup-tables.md)
+- **Validation & live lookups** (ORCID, ROR, OSTI API): [reference/validation-lookups.md](reference/validation-lookups.md)

@@ -13,13 +13,13 @@ Ask 3–5 fields at a time. Only prompt for fields not already auto-filled.
 
 ## Level 2 — Interoperable & Reusable (adds to Level 1)
 
-- Contact point (name, email, affiliation, ORCID)
+- Contact point (name, email, affiliation, ORCID) — after collecting ORCID, run validation + lookup per validation-lookups.md
 - Access policy (sensitivity tier, access level, authorization) — see lookup-tables.md for sensitivity tiers
 - License (SPDX ID, name, URL)
 - Science domain
-- Originating research organization
-- Funding sources
-- Dataset authors and contributors
+- Originating research organization (name, ROR ID) — after collecting ROR ID, run validation + lookup per validation-lookups.md
+- Funding sources (award number, funder name, program) — after collecting an award number or DOI, run OSTI lookup per validation-lookups.md
+- Dataset authors and contributors (name, ORCID, affiliation ROR) — validate each ORCID and ROR as above
 - Provenance — how was the data generated or collected?
 - Related resources (datasets, publications, software)
 - Maintenance and stewardship plans
