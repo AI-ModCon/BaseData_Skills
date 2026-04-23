@@ -32,7 +32,7 @@ Ask the user:
 
 ### 2. Introspect the Dataset Directory
 
-See [reference/introspection-commands.md](reference/introspection-commands.md) for exact commands to run for file structure, schema extraction, and existing metadata files.
+See [references/introspection-commands.md](references/introspection-commands.md) for exact commands to run for file structure, schema extraction, and existing metadata files.
 
 ### 3. Auto-Fill the Data Card
 
@@ -59,7 +59,7 @@ Cross-check these fields for consistency between YAML frontmatter and markdown b
 
 ### 4. Prompt for Missing Fields
 
-Present auto-discovered values for confirmation, then ask for unfilled fields. Ask **3–5 at a time**. See [reference/field-prompts.md](reference/field-prompts.md) for the full per-level field list.
+Present auto-discovered values for confirmation, then ask for unfilled fields. Ask **3–5 at a time**. See [references/field-prompts.md](references/field-prompts.md) for the full per-level field list.
 
 ### 5. Generate the Data Card
 
@@ -83,6 +83,6 @@ Ask if the user wants to revise any sections.
 
 - **Template**: `references/datacard_template_v1.md`
 - **Datasheet companion**: `references/datasheet_template.md` — consult if user mentions "datasheet" questions
-- **Introspection commands**: [reference/introspection-commands.md](reference/introspection-commands.md)
-- **Per-level field prompts**: [reference/field-prompts.md](reference/field-prompts.md)
-- **Lookup tables** (OSTI codes, sensitivity tiers): [reference/lookup-tables.md](reference/lookup-tables.md)
+- **Introspection commands**: [references/introspection-commands.md](references/introspection-commands.md)
+- **Per-level field prompts**: [references/field-prompts.md](references/field-prompts.md)
+- **Lookup tables** (OSTI codes, sensitivity tiers): [references/lookup-tables.md](references/lookup-tables.md)
