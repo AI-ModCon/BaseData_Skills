@@ -12,13 +12,13 @@ import sys
 import argparse
 
 import subprocess
+import shlex
 import signal
 import multiprocessing as mp
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 import itertools
 from string import Formatter
 import sqlite3
-import socket
 import random
 import datetime
 
@@ -112,6 +112,7 @@ def execute(
     finished = 0
 
     while True:
+        ## wait a random to avoid contention at once
         time.sleep(random.randint(0, 10))
 
         if check_timeleft is not None and check_timeleft > 0:
@@ -181,11 +182,25 @@ def execute(
                 continue
             break
 
-        bashcmd = "bash -c '%s'" % cmd
+        bashargs = ["bash", "-c", cmd]
         if prefix is not None:
-            bashcmd = "%s bash -c '%s'" % (prefix, cmd)
+            bashargs = shlex.split(prefix) + bashargs
         if verbose:
-            print("%d: cmd:" % taskid, bashcmd)
+            print("%d: cmd:" % taskid, shlex.join(bashargs))
+
+        if dryrun:
+            print("dryrun:", shlex.join(bashargs))
+            with sqlite3.connect(dbfile) as con:
+                execute_sql_with_retry(
+                    con,
+                    "UPDATE parjob SET Starttime = NULL, Exitval = NULL WHERE Seq = ?;",
+                    (taskid,),
+                )
+                con.commit()
+            finished += 1
+            if max_jobs is not None and finished >= max_jobs:
+                break
+            continue
 
         if not dryrun:
             starttime = time.time()
@@ -193,11 +208,11 @@ def execute(
                 active.value += 1
 
             p = subprocess.Popen(
-                bashcmd,
+                bashargs,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
-                shell=True,
+                shell=False,
                 start_new_session=True,
                 env=os.environ.copy(),
             )
@@ -207,7 +222,8 @@ def execute(
             with sqlite3.connect(dbfile) as con:
                 execute_sql_with_retry(
                     con,
-                    f"UPDATE parjob SET Hostname = '{hostname}', PID = {p.pid} WHERE Seq = {taskid};",
+                    "UPDATE parjob SET Hostname = ?, PID = ? WHERE Seq = ?;",
+                    (hostname, p.pid, taskid),
                 )
                 con.commit()
 
@@ -278,13 +294,14 @@ def jobcount():
             ) = row
         return (total, done)
 
-    while True:
+    for attempt in range(db_retries):
         try:
             return dojob()
         except Exception as e:
-            log("Exception:", e)
-            log("Sleep and try again ...")
-            time.sleep(1)
+            log(f"jobcount Exception (attempt {attempt + 1}/{db_retries}):", e)
+            if attempt < db_retries - 1:
+                time.sleep(db_retry_delay)
+    raise RuntimeError(f"jobcount failed after {db_retries} attempts")
 
 
 def cmdlist(argv):
@@ -294,7 +311,6 @@ def cmdlist(argv):
     cmds = list()
     _args = list()
     _type = 0  ## 0: regular, 1: file
-    has_separator = any(x in (":::", "::::") for x in argv)
     for x in argv:
         if x == ":::":
             cmds.append(_args)
@@ -421,7 +437,7 @@ def checkdb(args):
         if args.where is not None:
             filter = f"{args.where}"
         if args.like is not None:
-            filter = f"Command LIKE '{args.like}'"
+            filter = "Command LIKE '%s'" % args.like.replace("'", "''")
         if args.id:
             if not isinstance(args.id, list):
                 args.id = [args.id]
@@ -461,7 +477,7 @@ def resetdb(args):
         if args.where is not None:
             filter = f"{args.where}"
         if args.like is not None:
-            filter = f"Command LIKE '{args.like}'"
+            filter = "Command LIKE '%s'" % args.like.replace("'", "''")
         if args.all:
             filter = "1=1"
         if args.nonzero:
@@ -496,7 +512,7 @@ def deletedb(args):
     with sqlite3.connect(dbfile) as con:
         filter = "Exitval <> 0"
         if args.like is not None:
-            filter = f"Command LIKE '{args.like}'"
+            filter = "Command LIKE '%s'" % args.like.replace("'", "''")
         if args.all:
             filter = "1=1"
         if args.id:
@@ -520,7 +536,8 @@ def updatedb(args):
     with sqlite3.connect(dbfile) as con:
         filter = "1 = 1"
         if args.like is not None:
-            filter = f"Command LIKE '{args.like}'"
+            filter = "Command LIKE '%s'" % args.like.replace("'", "''")
+
         if args.id:
             if not isinstance(args.id, list):
                 args.id = [args.id]
@@ -616,14 +633,14 @@ def initdb(args):
 
         inserted_rows = 0
         for i, cmd in task_list:
-            sql = "SELECT 1 FROM parjob WHERE Command = '%s';" % (cmd,)
-            cur.execute(sql)
+            cur.execute("SELECT 1 FROM parjob WHERE Command = ?;", (cmd,))
             exists = cur.fetchone()
             if args.check_dup and exists:
                 print("Already exists. Skip:", cmd)
             else:
-                sql = "INSERT INTO parjob (Command) VALUES ('%s');" % (cmd,)
-                cur = execute_sql_with_retry(con, sql)
+                cur = execute_sql_with_retry(
+                    con, "INSERT INTO parjob (Command) VALUES (?);", (cmd,)
+                )
                 inserted_rows += cur.rowcount
         con.commit()
         print("%d tasks added." % (inserted_rows))
@@ -652,7 +669,6 @@ def exec(args):
     )
     p.start()
 
-    env = os.environ.copy()
     counter = mp.Value("i", 0)
     # pool = ProcessPoolExecutor(max_workers=args.nworkers, initializer=hello, initargs=(counter,))
     pool = ThreadPoolExecutor(
@@ -887,6 +903,7 @@ if __name__ == "__main__":
         "--replace",
         metavar="OLD,NEW",
         help="replace statement in the form of 'old,new'",
+        required=True,
     )
     parser.add_argument("--like", metavar="PATTERN", help="like statement")
     parser.add_argument("--id", type=int, metavar="ID", help="reset by id", nargs="+")
