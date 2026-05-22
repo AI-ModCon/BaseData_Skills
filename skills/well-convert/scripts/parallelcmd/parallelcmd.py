@@ -36,6 +36,10 @@ def log(*args, sep=" "):
     logging.debug(sep.join(map(str, args)))
 
 
+def info(*args, sep=" "):
+    logging.info(sep.join(map(str, args)))
+
+
 def is_sqlite_lock_error(exc: Exception) -> bool:
     return isinstance(exc, sqlite3.OperationalError) and any(
         token in str(exc).lower() for token in ("locked", "busy")
@@ -186,10 +190,10 @@ def execute(
         if prefix is not None:
             bashargs = shlex.split(prefix) + bashargs
         if verbose:
-            print("%d: cmd:" % taskid, shlex.join(bashargs))
+            log("%d: cmd:" % taskid, shlex.join(bashargs))
 
         if dryrun:
-            print("dryrun:", shlex.join(bashargs))
+            info("dryrun: %s" % shlex.join(bashargs))
             with sqlite3.connect(dbfile) as con:
                 execute_sql_with_retry(
                     con,
@@ -263,9 +267,9 @@ def execute(
             exitval = -124 if timed_out else p.returncode
 
             if timed_out:
-                print(f"{taskid}: Timeout after {timeout}s. Killed.", flush=True)
+                info("%d: Timeout after %ss. Killed." % (taskid, timeout))
             elif verbose:
-                print("%d: Done:" % taskid, p.returncode)
+                log("%d: Done: %s" % (taskid, p.returncode))
 
             with sqlite3.connect(dbfile) as con:
                 execute_sql_with_retry(
@@ -502,7 +506,7 @@ def resetdb(args):
                 con,
                 f"UPDATE parjob SET Starttime = NULL, Hostname = NULL, PID = NULL, JobRuntime = NULL, Exitval = NULL WHERE {filter};",
             )
-            print("Reset:", cur.rowcount)
+            info("Reset: %d" % cur.rowcount)
             con.commit()
         else:
             print("Aborted.")
@@ -526,7 +530,7 @@ def deletedb(args):
         ans = input("%d number of rows will be deleted. Continue? (Y/N): " % count)
         if ans == "Y" or ans == "y":
             cur = execute_sql_with_retry(con, f"DELETE FROM parjob WHERE {filter};")
-            print("Delete:", cur.rowcount)
+            info("Delete: %d" % cur.rowcount)
             con.commit()
         else:
             print("Aborted.")
@@ -575,7 +579,7 @@ def updatedb(args):
                 )
                 affected_rowcount += cur.rowcount
 
-            print("Updated:", affected_rowcount)
+            info("Updated: %d" % affected_rowcount)
             con.commit()
         else:
             print("Aborted.")
@@ -629,21 +633,21 @@ def initdb(args):
                 "  Command TEXT);"
             )
             cur.execute(sql)
-            print("%s created" % (dbfile))
+            info("%s created" % (dbfile))
 
         inserted_rows = 0
         for i, cmd in task_list:
             cur.execute("SELECT 1 FROM parjob WHERE Command = ?;", (cmd,))
             exists = cur.fetchone()
             if args.check_dup and exists:
-                print("Already exists. Skip:", cmd)
+                info("Already exists. Skip: %s" % cmd)
             else:
                 cur = execute_sql_with_retry(
                     con, "INSERT INTO parjob (Command) VALUES (?);", (cmd,)
                 )
                 inserted_rows += cur.rowcount
         con.commit()
-        print("%d tasks added." % (inserted_rows))
+        info("%d tasks added." % (inserted_rows))
         # res = cur.execute("select count(*) from parjob;")
         # (ntotal,) = res.fetchone()
         # print("%d Total added." % (ntotal))

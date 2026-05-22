@@ -49,14 +49,36 @@ After each step print:
 ➡️ **Next:** Step N — Name — [one-line description]
 ```
 
+## Parallel execution pattern
+
+Used in Step 0 (extraction) and Steps 4–5 (conversion). Whenever running jobs in parallel, ask for execution mode and show a recommended default based on job count and data size:
+
+- **General parallel**: few or small jobs, interactive session — ask for number of concurrent workers
+- **Slurm / PBS**: many or large jobs — ask for partition/queue, account, nodes, tasks-per-node, wall time
+
+For Slurm/PBS, run workers via:
+```bash
+srun parallelcmd.py --db "$DB" exec -j $NTASKS --progress
+```
+
+For general parallel, run `parallelcmd.py exec` directly (no `srun` wrapper).
+
+Monitor all modes with `parallelcmd.py check`.
+
 ## Step 0 — Preprocess
 
 Scan source for `.zip`, `.tar`, `.tar.gz`, `.tgz`, `.tar.bz2`, `.gz`.
 - If none found, skip directly to Step 1.
-- If found, ask whether to extract; if yes:
-  - Extract to `<output_root>/extracted/` only — never into source
-  - Parallelize with `parallelcmd.py` if many archives
-  - Verify files appear under `<output_root>/extracted/` and source is unchanged
+- If found, list the archives and ask whether to extract.
+
+If extracting:
+- Extract to `<output_root>/extracted/` only — never modify source
+- Choose execution mode per the parallel execution pattern above
+- Submit and monitor with `parallelcmd.py check` until all jobs complete
+- On failure: report errors and ask whether to retry or skip
+- On success: show a file summary under `<output_root>/extracted/` and confirm source is unchanged
+
+Do not proceed to Step 1 until all archives are extracted and verified.
 
 ## Step 1 — Inspect
 
@@ -93,19 +115,13 @@ Wait for user to resolve all issues before proceeding.
 - **Output shape**: (n_trajectories, n_steps, spatial…) and estimated file sizes per chunk
 - **Output destination**: confirm dir and filename pattern
 - **Special cases**: complex fields (real/imag), time_varying=False fields, non-standard coordinates
-- **Parallelism**: job count, suggested resources (nodes, workers, wall time)
+- **Execution mode**: confirm mode and resources per the parallel execution pattern; estimate job count and wall time
 
 Wait for user approval before proceeding.
 
 ## Step 4 — Generate scripts
 
-Ask:
-- **Execution mode**: Slurm / PBS / general parallel?
-  - Slurm: partition, account, nodes, allocation time
-  - PBS: queue, account, nodes, allocation time
-  - General: number of concurrent workers
-
-Write all scripts to `<output_root>/scripts/`:
+Using the execution mode and resources confirmed in Step 3, write all scripts to `<output_root>/scripts/`:
 - `well_common.py` — constants, grid loader, checkpoint I/O, Well attribute writers
 - `convert_<type>.py` — per file type; pre-allocate HDF5, stream snapshots, checkpoint after each
 - `init_convert_queue.sh` — populate `parallelcmd.py` SQLite queue with all jobs
