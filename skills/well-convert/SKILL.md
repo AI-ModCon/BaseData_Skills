@@ -51,19 +51,31 @@ After each step print:
 
 ## Parallel execution pattern
 
-Used in Step 0 (extraction) and Steps 4–5 (conversion). Whenever running jobs in parallel, ask for execution mode and show a recommended default based on job count and data size:
+Applied in Step 0 (extraction) and Steps 4–5 (conversion). Before running any parallel workload, ask the user for their execution mode and recommend a default based on job count and data size.
 
-- **General parallel**: few or small jobs, interactive session — ask for number of concurrent workers
-- **Slurm / PBS**: many or large jobs — ask for partition/queue, account, nodes, tasks-per-node, wall time
+| Mode | When to recommend | What to ask for |
+|------|-------------------|-----------------|
+| **General** | Few or small jobs; interactive session | Number of concurrent workers |
+| **Slurm** | Many or large jobs on a cluster | Partition, account, nodes, tasks-per-node, wall time |
+| **PBS** | Many or large jobs on a PBS cluster | Queue, account, nodes, procs-per-node, wall time |
 
-For Slurm/PBS, run workers via:
+**Launch commands:**
+
 ```bash
+# General (no scheduler wrapper)
+parallelcmd.py --db "$DB" exec -j $NWORKERS --progress
+
+# Slurm
 srun parallelcmd.py --db "$DB" exec -j $NTASKS --progress
+
+# PBS
+mpiexec -n ${NTOTPROCS} --ppn ${NPROCS_PER_NODE} parallelcmd.py --db "$DB" exec -j $NTASKS --progress
 ```
 
-For general parallel, run `parallelcmd.py exec` directly (no `srun` wrapper).
-
-Monitor all modes with `parallelcmd.py check`.
+**Monitor all modes with:**
+```bash
+parallelcmd.py check
+```
 
 ## Step 0 — Preprocess
 

@@ -953,7 +953,7 @@ if __name__ == "__main__":
 
     if args.db is not None:
         dbname = args.db
-        dbfile = dbname + ".sqlite"
+        dbfile = dbname + ".sqlite" if not dbname.endswith(".sqlite") else dbname
 
     db_retries = max(1, args.db_retries)
 
