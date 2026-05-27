@@ -158,3 +158,19 @@ def test_validation_rules_has_conditional_required_block():
     )
     assert embargo_rule is not None, "no rule for workflow.state=embargo"
     assert "workflow.embargo_until" in embargo_rule["require"]
+
+
+def test_profile_prompts_exists_and_has_all_profiles():
+    path = REF / "profile-prompts.md"
+    assert path.exists()
+    blocks = _fenced_yaml_blocks(path)
+    assert "prompts" in blocks
+    prompts = blocks["prompts"]
+    for profile in ("core", "extended", "ai_ready", "sensitive"):
+        assert profile in prompts, f"missing profile `{profile}`"
+        batches = prompts[profile]
+        assert isinstance(batches, list) and len(batches) > 0
+        for batch in batches:
+            assert "title" in batch
+            assert "fields" in batch
+            assert 1 <= len(batch["fields"]) <= 5, "batch size must be 1-5"
