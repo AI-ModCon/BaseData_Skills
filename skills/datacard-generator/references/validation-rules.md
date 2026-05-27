@@ -147,8 +147,6 @@ enums:
     - export_control_review
     - irb_approval
     - other
-  license.spdx_id:
-    escape_values: [other, pending]
   ai_usage.ai_ready: [true, false, conditional]
   ai_usage.training_use_allowed: [true, false, conditional]
   ai_usage.inference_use_allowed: [true, false, conditional]
@@ -159,7 +157,7 @@ enums:
   compliance.irb_approved: [true, false, not_applicable]
 ```
 
-Values are sourced from the Genesis v1.0 template comments and Appendix B of the Field Requirements doc; `license.spdx_id` is special — the SPDX registry is too large to enumerate, so the validator treats any value not in `escape_values` as an informational pass-through.
+Values are sourced from the Genesis v1.0 template comments and Appendix B of the Field Requirements doc. `license.spdx_id` is intentionally not enumerated — the SPDX registry has 600+ entries and is too large to maintain inline; the conditional rule requiring `license.name` when `spdx_id=other` is the only license enforcement needed.
 
 ## Formats
 

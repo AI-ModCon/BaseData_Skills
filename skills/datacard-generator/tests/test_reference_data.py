@@ -128,7 +128,6 @@ def test_validation_rules_has_enums_block():
         "dataset_type",
         "access_policy.access_level",
         "access_policy.authorization_required",
-        "license.spdx_id",
     }
     missing = expected_fields - set(enums.keys())
     assert not missing, f"enums missing: {missing}"
