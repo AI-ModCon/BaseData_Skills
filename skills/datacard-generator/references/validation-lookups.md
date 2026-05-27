@@ -54,16 +54,18 @@ Use the most recent employment's `organization.name` and `organization.disambigu
 
 ### Format Validation
 
-A ROR ID must match: `^0[a-z0-9]{6}\d{2}$` (9 characters, starts with `0`)
+A ROR identifier in this skill is stored in **URL form** to match the Genesis template's documented convention (`Format: https://ror.org/XXXXXXX`). The full URL must match: `^https://ror\.org/[0-9a-z]{9}$`
 
 Valid forms:
-- `03yrm5c26` — bare ID (preferred in YAML)
-- `https://ror.org/03yrm5c26` — full URL (strip prefix before storing)
+- `https://ror.org/03yrm5c26` — full URL (canonical for Genesis datacards)
+- `03yrm5c26` — bare 9-character ID; prepend `https://ror.org/` before storing
 
 ### Live Lookup
 
+The ROR API expects the bare 9-character ID, not the URL form. Strip the `https://ror.org/` prefix when querying, but **store** the URL form in the datacard.
+
 ```
-GET https://api.ror.org/organizations/{ror_id}
+GET https://api.ror.org/organizations/{bare_id}
 ```
 
 On success, extract:
