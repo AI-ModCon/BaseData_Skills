@@ -182,5 +182,63 @@ def check_enums(data: dict, rules: dict) -> list[Finding]:
     return findings
 
 
+def _walk_path_template(data: dict, template: str) -> list[tuple[str, Any]]:
+    """Resolve a dotted path template that may contain `[]` for list iteration.
+
+    Returns a list of (concrete_path, value) pairs. If the path doesn't
+    exist, returns []. Wildcards expand into one entry per list element.
+    """
+    parts = template.split(".")
+    frontier: list[tuple[str, Any]] = [("", data)]
+    for raw in parts:
+        if raw.endswith("[]"):
+            key = raw[:-2]
+            next_frontier: list[tuple[str, Any]] = []
+            for ppath, cur in frontier:
+                if not isinstance(cur, dict) or key not in cur:
+                    continue
+                lst = cur[key]
+                if not isinstance(lst, list):
+                    continue
+                for i, item in enumerate(lst):
+                    new_path = f"{ppath}.{key}[{i}]".lstrip(".")
+                    next_frontier.append((new_path, item))
+            frontier = next_frontier
+        else:
+            next_frontier = []
+            for ppath, cur in frontier:
+                if isinstance(cur, dict) and raw in cur:
+                    new_path = f"{ppath}.{raw}".lstrip(".")
+                    next_frontier.append((new_path, cur[raw]))
+            frontier = next_frontier
+    return frontier
+
+
+def check_formats(data: dict, rules: dict) -> list[Finding]:
+    formats = rules.get("formats", {}) or {}
+    fmt_fields = rules.get("format_fields", {}) or {}
+    compiled = {name: re.compile(pat) for name, pat in formats.items()}
+    findings: list[Finding] = []
+    for fmt_name, field_templates in fmt_fields.items():
+        regex = compiled.get(fmt_name)
+        if regex is None:
+            continue
+        for tpl in field_templates:
+            for concrete_path, value in _walk_path_template(data, tpl):
+                if value is None or value == "":
+                    continue
+                if isinstance(value, str) and (value.startswith("${")
+                                                or value.startswith("__")):
+                    continue
+                if not isinstance(value, str) or not regex.match(value):
+                    findings.append(Finding(
+                        code="BAD_FORMAT",
+                        field=concrete_path,
+                        severity="error",
+                        message=f"value `{value}` does not match `{fmt_name}` pattern",
+                    ))
+    return findings
+
+
 if __name__ == "__main__":  # pragma: no cover - CLI added in a later task
     sys.exit(0)

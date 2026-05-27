@@ -78,3 +78,18 @@ def test_check_enums_flags_bad_classification():
     assert len(bad) == 1
     assert bad[0].code == "BAD_ENUM"
     assert "BOGUS" in bad[0].message
+
+
+def test_check_formats_passes_good_core():
+    rules = vd.load_rules(RULES)
+    fm = vd.load_datacard(FIXTURES / "good_core.md")
+    findings = vd.check_formats(fm, rules)
+    assert findings == []
+
+
+def test_check_formats_flags_bad_orcid():
+    rules = vd.load_rules(RULES)
+    fm = vd.load_datacard(FIXTURES / "bad_format_orcid.md")
+    findings = vd.check_formats(fm, rules)
+    orcid_failures = [f for f in findings if f.code == "BAD_FORMAT" and "orcid" in f.field]
+    assert len(orcid_failures) >= 1
