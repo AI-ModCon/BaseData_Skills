@@ -1,80 +1,58 @@
-# Introspection Commands
+# Introspection commands
 
-## Contents
-- File structure and size
-- Schema and data sampling (CSV, Parquet, JSON, HDF5/NetCDF, images)
-- Existing metadata files
-- Directory structure and splits
-- Edge case handling
+Commands SKILL.md can run (directly or via `scripts/introspect.sh`) to
+auto-fill Genesis v1.0 datacard fields. Each command's output maps to one
+or more YAML fields.
 
-## File Structure and Size
+## File structure & counts
 
-```bash
-# Full recursive file listing
-find <dataset_dir> -type f | sort
+| Command | Maps to |
+|---------|---------|
+| `find "$DIR" -type f \| wc -l` | `dataset_scale.record_count` (when file-based) |
+| `du -sb "$DIR"` (Linux) / `find -f%z` (macOS) | `dataset_scale.compressed_bytes` |
+| `find "$DIR" -type f -name '*.*' \| sed -E 's\|.*\\.\|\|' \| sort -u` | `dataset_info.formats` |
 
-# Count files by extension
-find <dataset_dir> -type f | sed 's/.*\.//' | sort | uniq -c | sort -rn
+## Schema extraction
 
-# Total size (human-readable)
-du -sh <dataset_dir>
+### CSV / TSV
+| Command | Maps to |
+|---------|---------|
+| `head -n 1 "$FILE" \| tr ',' '\n'` | `dataset_info.features` (flat list) |
+| `head -n 2 "$FILE"` | example for `dataset_info.features` (ai_ready) |
 
-# Size of top-level items
-du -sh <dataset_dir>/*
-```
+### HDF5
+| Command | Maps to |
+|---------|---------|
+| `h5ls "$FILE"` | `dataset_info.features` (group/dataset names) |
+| `h5dump -H "$FILE"` | full schema for `semantic_layer.schema_url` cross-ref |
 
-## Schema and Data Sampling
+### Parquet
+| Command | Maps to |
+|---------|---------|
+| `parquet-tools schema "$FILE"` | `dataset_info.features` (structured) |
 
-```bash
-# CSV/TSV — headers, row count, dtypes
-head -n 3 <file.csv>
-wc -l <file.csv>
-python3 -c "import pandas as pd; df = pd.read_csv('<file.csv>', nrows=5); print(df.dtypes); print(df.shape)"
+### NetCDF
+| Command | Maps to |
+|---------|---------|
+| `ncdump -h "$FILE"` | `dataset_info.features`, `dataset_info.spatial_coverage` |
 
-# Parquet
-python3 -c "import pandas as pd; df = pd.read_parquet('<file.parquet>'); print(df.dtypes); print(df.shape)"
+## Metadata file discovery
 
-# JSON — top-level structure
-python3 -c "import json; d=json.load(open('<file.json>')); print(type(d), list(d.keys()) if isinstance(d,dict) else f'{len(d)} items')"
+| File pattern | Maps to |
+|--------------|---------|
+| `README*` | `description.summary` (first paragraph), `description.keywords` |
+| `LICENSE*` / `COPYING*` | `license.spdx_id` (best-guess from content) |
+| `CITATION.cff` | `authors[]`, `citation.preferred_citation` |
+| `*.bib` | `citation.preferred_citation` |
 
-# HDF5
-python3 -c "import h5py; f=h5py.File('<file.h5>','r'); print(list(f.keys())); f.visititems(lambda n,o: print(n, type(o).__name__))"
+## Splits detection
 
-# NetCDF
-python3 -c "import netCDF4 as nc; d=nc.Dataset('<file.nc>'); print(d.variables.keys()); print(d.dimensions)"
+| Command | Maps to |
+|---------|---------|
+| `find "$DIR" -maxdepth 3 -type d -iname 'train' -o -iname 'test' -o -iname 'val*'` | `dataset_info.splits` |
 
-# Images — count by format
-find <dataset_dir> -type f \( -iname "*.jpg" -o -iname "*.png" -o -iname "*.tif" \) | wc -l
-```
+## Bulk inspection (use scripts/introspect.sh)
 
-For files larger than 1GB, sample only (e.g., `nrows=1000`) and note this in the review summary.
-
-## Existing Metadata Files
-
-```bash
-# Check for common metadata files
-for f in README.md README.txt LICENSE CITATION.cff CITATION.bib .zenodo.json datacite.json croissant.json metadata.json; do
-  [ -f "<dataset_dir>/$f" ] && echo "FOUND: $f"
-done
-
-# Print contents of found files
-cat <dataset_dir>/README.md 2>/dev/null
-cat <dataset_dir>/CITATION.cff 2>/dev/null
-cat <dataset_dir>/LICENSE 2>/dev/null
-```
-
-## Directory Structure and Splits
-
-```bash
-# Top-level listing and directory tree (2 levels)
-ls <dataset_dir>/
-find <dataset_dir> -maxdepth 2 -type d | sort
-```
-
-Look for `train/`, `test/`, `validation/`, or file naming patterns like `_train.csv`.
-
-## Edge Case Handling
-
-- **Empty directory**: Inform the user; ask whether to proceed with a skeleton card
-- **Binary-only files**: Note under "Files & Structure" and mark schema fields N/A
-- **Large files (>1GB)**: Sample only; note in the review summary
+`scripts/introspect.sh <dataset_dir>` runs all the above (where supported)
+and emits JSON. SKILL.md should prefer this over running commands ad hoc
+unless the auto-fill missed something specific.
