@@ -38,3 +38,73 @@ def test_genesis_template_has_top_level_sections():
     }
     missing = expected_top_level - set(fm.keys())
     assert not missing, f"missing top-level keys: {missing}"
+
+
+def _fenced_yaml_blocks(path: Path) -> dict[str, dict]:
+    """Extract fenced ```yaml blocks tagged by the section heading immediately above them."""
+    text = path.read_text()
+    pattern = re.compile(
+        r"^##\s+(?P<name>[A-Za-z_][\w\- ]*)\s*\n+```yaml\n(?P<body>.*?)\n```",
+        re.MULTILINE | re.DOTALL,
+    )
+    out = {}
+    for m in pattern.finditer(text):
+        key = m.group("name").strip().lower().replace(" ", "_")
+        body = yaml.safe_load(m.group("body"))
+        if isinstance(body, dict) and len(body) == 1 and key in body:
+            out[key] = body[key]
+        else:
+            out[key] = body
+    return out
+
+
+def test_validation_rules_has_profile_matrix():
+    path = REF / "validation-rules.md"
+    assert path.exists(), f"missing: {path}"
+    blocks = _fenced_yaml_blocks(path)
+    assert "profiles" in blocks, f"no `profiles` YAML block found; got blocks: {list(blocks)}"
+    profiles = blocks["profiles"]
+    for name in ("core", "extended", "ai_ready", "sensitive"):
+        assert name in profiles, f"profile `{name}` missing"
+        assert "required" in profiles[name], f"profile `{name}` missing `required` list"
+        assert isinstance(profiles[name]["required"], list)
+        assert len(profiles[name]["required"]) > 0, f"profile `{name}` has empty required list"
+
+
+def test_validation_rules_core_required_includes_essentials():
+    blocks = _fenced_yaml_blocks(REF / "validation-rules.md")
+    core_required = set(blocks["profiles"]["core"]["required"])
+    must_have = {
+        "datacard.datacard_version",
+        "datacard.profile",
+        "datacard.creation_method",
+        "datacard.created_date",
+        "datacard.updated_date",
+        "identification.name",
+        "identification.project",
+        "identification.version",
+        "identification.primary_id.type",
+        "identification.primary_id.value",
+        "description.summary",
+        "description.keywords",
+        "object_type",
+        "dataset_type",
+        "release_status",
+        "workflow.state",
+        "security.classification",
+        "security.sensitivity_tier",
+        "security.export_control",
+        "datacard.sensitivity_tier",
+        "datacard.access_level",
+        "access_policy.sensitivity_tier",
+        "access_policy.access_level",
+        "access_policy.authorization_required",
+        "contact.type",
+        "categorization.science_domain",
+        "dataset_info.formats",
+        "provenance.was_generated_by",
+        "sponsor_organizations",
+        "research_organizations",
+    }
+    missing = must_have - core_required
+    assert not missing, f"core required is missing: {missing}"
