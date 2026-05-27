@@ -7,10 +7,9 @@ allowed-tools: Bash(*) Read WebSearch WebFetch
 # Generating Datacards
 
 Generate a Genesis Mission Datacard v1.0 by introspecting a dataset
-directory and filling the YAML frontmatter of the canonical template,
-prompting the user for fields that introspection can't infer. The
-markdown narrative body is preserved with `<metadata_key:foo>`
-placeholders intact (downstream tooling expands them).
+directory and filling both the YAML frontmatter and the markdown narrative
+body of the canonical template, prompting the user for fields that
+introspection can't infer.
 
 The skill also has a one-shot **Convert** path for migrating an existing
 MODCON v1 datacard to Genesis v1.0.
@@ -122,9 +121,25 @@ run with a single `_`.
 prefers elsewhere.
 
 **What to write:** the canonical template
-(`references/genesis_v1.0_template.md`) with the YAML frontmatter fully
-populated. Leave the markdown body (below the second `---`) unchanged —
-keep `<metadata_key:foo>` placeholders intact for downstream automation.
+(`references/genesis_v1.0_template.md`) with **both halves filled**:
+
+- **YAML frontmatter** — fully populated from the workflow above.
+- **Markdown narrative body** (below the second `---`) — also fully filled.
+  Per the template's own instructions (line 917 of the template), the
+  `<metadata_key: foo>` tags in the body are explicit hooks for automated
+  YAML→markdown rendering. See
+  [references/body-fill-guide.md](references/body-fill-guide.md) for the
+  section-by-section mapping: which markdown sections substitute
+  mechanically from a YAML path, and which need short prose composition
+  from multiple YAML values.
+
+**Strip all placeholder markup before saving.** No `[!TODO]`, `<REPLACE:>`,
+`<INSTRUCTIONS:>`, `<metadata_key:>`, `${VARIABLE}`, or `__VALUE__` tokens
+should remain in the output. The introduction `<INSTRUCTIONS: ...>` blocks
+at the top of the markdown half (lines 902-918 of the template) should be
+removed entirely — they are guidance for the author, not content.
+
+Verify after writing: `grep -E '\[!TODO\]|<REPLACE:|<INSTRUCTIONS:|<metadata_key:|\$\{|__VALUE__' <output_file>` should return no matches.
 
 ### 8. Validate
 
@@ -172,8 +187,9 @@ When the user asks to convert an existing MODCON v1 datacard:
    - `orphans` — v1 fields with no Genesis equivalent. Surface them to the user so they can decide whether to drop or relocate.
 2. After prompting, rerun the converter without `--json` to write the file (`--out <path>`), or compose the final YAML inline and write directly.
 3. Set `datacard.creation_method = "hybrid"` and ensure `change_log[0] = {date: today, datacard_version: "1.0", summary: "Converted from MODCON v1"}` (the converter already does this — verify after writing).
-4. Run the validator (step 8 of the Generate path above).
-5. Present the review summary (step 10 of the Generate path above).
+4. **Fill the markdown body** of the converted file using the YAML you just wrote, following `references/body-fill-guide.md`. The converter only fills the YAML half — body-fill is the agent's responsibility, same as the Generate path.
+5. Run the validator (step 8 of the Generate path above).
+6. Present the review summary (step 10 of the Generate path above).
 
 ---
 
@@ -234,6 +250,7 @@ When the user asks to convert an existing MODCON v1 datacard:
 - **Template (do not edit)**: [references/genesis_v1.0_template.md](references/genesis_v1.0_template.md)
 - **Field-by-field guidance**: [references/genesis_field_guide.md](references/genesis_field_guide.md) (load on demand by section)
 - **Per-profile prompts**: [references/profile-prompts.md](references/profile-prompts.md)
+- **Body-fill guide**: [references/body-fill-guide.md](references/body-fill-guide.md) (markdown-body sections → YAML sources)
 - **Validation rules** (data — read by validator): [references/validation-rules.md](references/validation-rules.md)
 - **Live ORCID/ROR/OSTI enrichment via public APIs**: [references/live-enrichment.md](references/live-enrichment.md)
 - **Lookup tables** (enums in human form): [references/lookup-tables.md](references/lookup-tables.md)
