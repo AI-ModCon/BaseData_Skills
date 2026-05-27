@@ -1,20 +1,16 @@
-# Validation & Lookup Reference
+# Live Enrichment Reference
 
-When the user provides ORCID, ROR, or funding identifiers, validate the format and attempt live enrichment via the APIs below. Use the `WebFetch` tool for all API calls.
+When the user provides ORCID, ROR, or funding identifiers, the skill can resolve them against public APIs to pre-fill names, affiliations, and funding details. This file is the agent's guide to those APIs. Use the `WebFetch` tool for all live calls.
+
+**Format validation lives in `validation-rules.md`** (the `formats:` and `format_fields:` blocks) and is enforced by `scripts/validate_datacard.py`. This doc covers only the unique value-add: checksum verification, live API endpoints, and DOE-specific OSTI guidance.
 
 ---
 
 ## ORCID
 
-### Format Validation
+### Checksum verification (ISO 7064 MOD 11-2)
 
-An ORCID must match: `^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$`
-
-Examples of valid forms the user may provide:
-- `0000-0001-5000-0007` — bare ID (preferred in YAML)
-- `https://orcid.org/0000-0001-5000-0007` — full URL (strip prefix before storing)
-
-**Checksum (ISO 7064 MOD 11-2):** Take the first 15 digits, run the algorithm below, compare to the 16th character (which may be `X` = 10).
+Before calling the API, you can self-check an ORCID without a network round-trip. Take the first 15 digits, run the algorithm below, and compare to the 16th character (which may be `X` = 10).
 
 ```
 total = 0
@@ -52,13 +48,9 @@ Use the most recent employment's `organization.name` and `organization.disambigu
 
 ## ROR
 
-### Format Validation
+### Storage convention
 
-A ROR identifier in this skill is stored in **URL form** to match the Genesis template's documented convention (`Format: https://ror.org/XXXXXXX`). The full URL must match: `^https://ror\.org/[0-9a-z]{9}$`
-
-Valid forms:
-- `https://ror.org/03yrm5c26` — full URL (canonical for Genesis datacards)
-- `03yrm5c26` — bare 9-character ID; prepend `https://ror.org/` before storing
+ROR identifiers are stored in **URL form** (`https://ror.org/XXXXXXX`) per the Genesis template. The format regex is in `validation-rules.md`. When a user provides a bare 9-character ID (e.g., `03yrm5c26`), prepend `https://ror.org/` before storing.
 
 ### Live Lookup
 

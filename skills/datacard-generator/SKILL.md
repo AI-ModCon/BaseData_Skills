@@ -90,8 +90,9 @@ frontmatter using this decision table:
 | `provenance.was_generated_by` | always prompt (`[core]`, often forgotten) | — |
 | `_repository.*` | **NEVER** — system-owned | — |
 
-For ORCID / ROR / funding-ID validation and live enrichment, see
-[references/validation-lookups.md](references/validation-lookups.md).
+For ORCID / ROR / funding-ID live enrichment via public APIs, see
+[references/live-enrichment.md](references/live-enrichment.md). Format
+validation is handled automatically by the validator.
 
 ### 5. Confirm `dataset_readiness.level`
 
@@ -234,7 +235,7 @@ When the user asks to convert an existing MODCON v1 datacard:
 - **Field-by-field guidance**: [references/genesis_field_guide.md](references/genesis_field_guide.md) (load on demand by section)
 - **Per-profile prompts**: [references/profile-prompts.md](references/profile-prompts.md)
 - **Validation rules** (data — read by validator): [references/validation-rules.md](references/validation-rules.md)
-- **Live ORCID/ROR/OSTI validation & lookup**: [references/validation-lookups.md](references/validation-lookups.md)
+- **Live ORCID/ROR/OSTI enrichment via public APIs**: [references/live-enrichment.md](references/live-enrichment.md)
 - **Lookup tables** (enums in human form): [references/lookup-tables.md](references/lookup-tables.md)
 - **Introspection commands**: [references/introspection-commands.md](references/introspection-commands.md)
 - **Validator**: `scripts/validate_datacard.py`
