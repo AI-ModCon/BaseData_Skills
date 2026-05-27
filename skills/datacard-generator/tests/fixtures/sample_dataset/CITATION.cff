@@ -1,0 +1,7 @@
+cff-version: 1.2.0
+title: Sample Dataset
+authors:
+  - family-names: User
+    given-names: Test
+    email: test@example.org
+date-released: 2026-01-01
