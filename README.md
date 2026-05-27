@@ -7,7 +7,7 @@ Agentic skills for the ModCon Base Data project. These skills extend coding agen
 | Skill | Description |
 |-------|-------------|
 | [`croissant-validator`](skills/croissant-validator/) | Validate and generate [Croissant](https://mlcommons.org/croissant/) metadata (`croissant.json`) for ML datasets following the MLCommons Croissant 1.0 spec. |
-| [`datacard-generator`](skills/datacard-generator/) | Generate MODCON data cards for scientific datasets by introspecting a dataset directory. Supports three readiness levels: Discoverable (L1), Interoperable & Reusable (L2), and Understandable & Trustworthy (L3). |
+| [`datacard-generator`](skills/datacard-generator/) | Generate Genesis Mission Datacard v1.0 documentation for scientific datasets. Introspects a dataset directory, fills the YAML frontmatter of the canonical template, prompts for missing required fields based on the chosen profile (`core` / `extended` / `ai_ready` / `sensitive`), and validates the output. Also converts existing MODCON v1 datacards to Genesis v1.0 drafts. |
 | [`hdmf-schema-builder`](skills/hdmf-schema-builder/) | Build [HDMF](https://hdmf.readthedocs.io/) (Hierarchical Data Modeling Framework) schema for organizing HDF5 data files for AI training and data sharing |
 | [`well-convert`](skills/well-convert/) | Convert a simulation dataset to [the Well HDF5 format](https://github.com/PolymathicAI/the_well) — covers the full pipeline: preprocessing, field inspection, schema mapping, conversion planning, HPC script generation, and job monitoring. |
 
