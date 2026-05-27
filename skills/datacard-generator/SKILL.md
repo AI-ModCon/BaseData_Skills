@@ -1,7 +1,7 @@
 ---
 name: datacard-generator
 description: Generate Genesis Mission Datacard v1.0 documentation for scientific datasets by introspecting a directory and filling the structured template. Use when the user asks to create a datacard, dataset card, dataset documentation, dataset metadata, document a dataset, or prepare a dataset for sharing. Supports four profiles — core (in-workflow/draft), extended (shared/published), ai_ready (AI/ML use), sensitive (CUI/export/PII). Also converts MODCON v1 datacards to Genesis v1.0.
-allowed-tools: Bash(*) view(*) web_search(*)
+allowed-tools: Bash(*) Read WebSearch WebFetch
 ---
 
 # Generating Datacards
