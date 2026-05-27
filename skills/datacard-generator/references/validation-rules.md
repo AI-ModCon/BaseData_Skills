@@ -86,20 +86,6 @@ The `extends:` chain means: profile X's effective required set is the
 union of its own `required:` and (recursively) all ancestors' required
 sets. So `ai_ready` requires core ∪ extended ∪ ai_ready.
 
-## Pub conditional
-
-```yaml
-pub_conditional:
-  when_release_status_in: [approved, published]
-  required:
-    - license.spdx_id
-    - authors
-    - citation.preferred_citation
-    - dates.issued
-```
-
-Required when `release_status` is `approved` or `published`.
-
 ## Enums
 
 ```yaml
@@ -244,9 +230,15 @@ conditional_required:
   - when: {release_status: deprecated}
     severity: warn
     require: [identification.superseded_by]
+  - when: {release_status: [approved, published]}
+    require:
+      - license.spdx_id
+      - authors
+      - citation.preferred_citation
+      - dates.issued
 ```
 
-`when` triggers if all key/value pairs match; `when_not` triggers if the key value differs from the given value; `severity: warn` makes the rule non-blocking.
+`when` triggers if all key/value pairs match; a list value in `when` (e.g., `{release_status: [approved, published]}`) acts as an "in" check. `when_not` triggers if the key value differs from the given value. `severity: warn` makes the rule non-blocking.
 
 ## Workflow release alignment
 

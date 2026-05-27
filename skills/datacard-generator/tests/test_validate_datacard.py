@@ -13,7 +13,7 @@ RULES = SKILL_ROOT / "references" / "validation-rules.md"
 def test_load_rules_returns_expected_blocks():
     rules = vd.load_rules(RULES)
     for key in ("profiles", "enums", "formats", "conditional_required",
-                "workflow_release_alignment", "pub_conditional", "format_fields"):
+                "workflow_release_alignment", "format_fields"):
         assert key in rules, f"missing block: {key}"
 
 
@@ -110,6 +110,17 @@ def test_check_conditional_required_embargo_missing_until():
     findings = vd.check_conditional_required(fm, rules)
     targets = [f.field for f in findings if f.code == "MISSING_REQUIRED"]
     assert "workflow.embargo_until" in targets
+
+
+def test_check_conditional_required_pub_missing_license():
+    """release_status=published triggers the pub bundle: license, authors, citation, dates.issued."""
+    rules = vd.load_rules(RULES)
+    fm = vd.load_datacard(FIXTURES / "bad_pub_missing_license.md")
+    findings = vd.check_conditional_required(fm, rules)
+    targets = [f.field for f in findings if f.code == "MISSING_REQUIRED"]
+    for required in ("license.spdx_id", "authors",
+                     "citation.preferred_citation", "dates.issued"):
+        assert required in targets, f"expected {required} flagged, got {targets}"
 
 
 def test_check_cross_field_features_mixed_form():

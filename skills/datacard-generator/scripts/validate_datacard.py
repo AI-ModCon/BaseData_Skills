@@ -225,11 +225,20 @@ def check_formats(data: dict, rules: dict) -> list[Finding]:
 
 
 def _match_condition(data: dict, when: dict, negate: bool = False) -> bool:
+    """Match a `when` clause against the datacard.
+
+    Each value may be a scalar (equality) or a list (membership). `negate=True`
+    inverts the match (used for `when_not:` clauses).
+    """
     for key, expected in when.items():
         actual = get_field(data, key)
         if actual is MISSING:
             return False if not negate else True
-        if (actual == expected) == negate:
+        if isinstance(expected, list):
+            matches = actual in expected
+        else:
+            matches = actual == expected
+        if matches == negate:
             return False
     return True
 
