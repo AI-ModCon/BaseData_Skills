@@ -358,5 +358,61 @@ def check_cross_field(data: dict, rules: dict, profile: str) -> list[Finding]:
     return out
 
 
-if __name__ == "__main__":  # pragma: no cover - CLI added in a later task
-    sys.exit(0)
+@dataclass
+class Result:
+    profile: str
+    findings: list[Finding] = field(default_factory=list)
+
+    @property
+    def ok(self) -> bool:
+        return not any(f.severity == "error" for f in self.findings)
+
+    def as_dict(self) -> dict:
+        return {
+            "profile": self.profile,
+            "ok": self.ok,
+            "findings": [f.as_dict() for f in self.findings],
+        }
+
+
+def validate(data: dict, rules: dict, profile: str) -> Result:
+    findings: list[Finding] = []
+    findings.extend(check_required(data, rules, profile))
+    findings.extend(check_conditional_required(data, rules))
+    findings.extend(check_enums(data, rules))
+    findings.extend(check_formats(data, rules))
+    findings.extend(check_cross_field(data, rules, profile))
+    return Result(profile=profile, findings=findings)
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Validate a Genesis v1.0 datacard.")
+    parser.add_argument("file", type=Path, help="Path to datacard .md file")
+    parser.add_argument("--profile", required=True,
+                        choices=["core", "extended", "ai_ready", "sensitive"])
+    parser.add_argument("--rules", type=Path,
+                        default=Path(__file__).resolve().parent.parent
+                                / "references" / "validation-rules.md")
+    parser.add_argument("--json", action="store_true",
+                        help="Emit machine-readable JSON to stdout")
+    args = parser.parse_args(argv)
+
+    rules = load_rules(args.rules)
+    data = load_datacard(args.file)
+    result = validate(data, rules, profile=args.profile)
+
+    if args.json:
+        print(json.dumps(result.as_dict(), indent=2))
+    else:
+        if result.ok:
+            print(f"OK: {args.file} valid for profile `{args.profile}`")
+        else:
+            n_errors = sum(1 for f in result.findings if f.severity == 'error')
+            print(f"FAIL: {args.file} ({n_errors} errors)")
+        for f in result.findings:
+            print(f"  [{f.severity}] {f.code} {f.field}: {f.message}")
+    return 0 if result.ok else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

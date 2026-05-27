@@ -1,4 +1,6 @@
 from pathlib import Path
+import subprocess
+import sys
 import pytest
 
 import validate_datacard as vd
@@ -142,3 +144,56 @@ def test_check_cross_field_workflow_release_warning_only():
                  if f.field == "workflow.state" and f.code == "INCONSISTENT"]
     assert alignment, "expected alignment warning"
     assert alignment[0].severity == "warn"
+
+
+def test_validate_returns_aggregate_findings():
+    rules = vd.load_rules(RULES)
+    fm = vd.load_datacard(FIXTURES / "bad_missing_required.md")
+    result = vd.validate(fm, rules, profile="core")
+    assert isinstance(result.findings, list)
+    assert result.profile == "core"
+    assert result.ok is False
+    assert any(f.code == "MISSING_REQUIRED" for f in result.findings)
+
+
+def test_validate_returns_ok_on_good_core():
+    rules = vd.load_rules(RULES)
+    fm = vd.load_datacard(FIXTURES / "good_core.md")
+    result = vd.validate(fm, rules, profile="core")
+    errors = [f for f in result.findings if f.severity == "error"]
+    assert errors == []
+    assert result.ok is True
+
+
+def test_cli_exits_nonzero_on_bad(tmp_path):
+    out = subprocess.run(
+        [sys.executable,
+         str(SKILL_ROOT / "scripts" / "validate_datacard.py"),
+         str(FIXTURES / "bad_missing_required.md"),
+         "--profile", "core",
+         "--rules", str(RULES),
+         "--json"],
+        capture_output=True, text=True,
+    )
+    assert out.returncode != 0
+    import json
+    payload = json.loads(out.stdout)
+    assert payload["ok"] is False
+    assert payload["profile"] == "core"
+    assert any(f["code"] == "MISSING_REQUIRED" for f in payload["findings"])
+
+
+def test_cli_exits_zero_on_good(tmp_path):
+    out = subprocess.run(
+        [sys.executable,
+         str(SKILL_ROOT / "scripts" / "validate_datacard.py"),
+         str(FIXTURES / "good_core.md"),
+         "--profile", "core",
+         "--rules", str(RULES),
+         "--json"],
+        capture_output=True, text=True,
+    )
+    assert out.returncode == 0
+    import json
+    payload = json.loads(out.stdout)
+    assert payload["ok"] is True
