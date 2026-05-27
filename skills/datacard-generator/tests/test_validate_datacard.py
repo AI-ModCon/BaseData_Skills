@@ -108,3 +108,37 @@ def test_check_conditional_required_embargo_missing_until():
     findings = vd.check_conditional_required(fm, rules)
     targets = [f.field for f in findings if f.code == "MISSING_REQUIRED"]
     assert "workflow.embargo_until" in targets
+
+
+def test_check_cross_field_features_mixed_form():
+    rules = vd.load_rules(RULES)
+    fm = vd.load_datacard(FIXTURES / "bad_cross_field_features.md")
+    findings = vd.check_cross_field(fm, rules, profile="core")
+    codes = [f.code for f in findings]
+    assert "INCONSISTENT" in codes
+    msg = " ".join(f.message for f in findings)
+    assert "features" in msg
+
+
+def test_check_cross_field_filename_mismatch():
+    rules = vd.load_rules(RULES)
+    fm = vd.load_datacard(FIXTURES / "bad_cross_field_filename.md")
+    findings = vd.check_cross_field(fm, rules, profile="core")
+    targets = [(f.code, f.field) for f in findings]
+    assert ("INCONSISTENT", "datacard.filename") in targets
+
+
+def test_check_cross_field_workflow_release_warning_only():
+    """A core-profile good fixture has workflow.state=raw + release_status=draft.
+
+    Setting release_status=published with workflow.state=raw should produce
+    a warn-severity INCONSISTENT, not an error. Use a one-off in-memory dict.
+    """
+    rules = vd.load_rules(RULES)
+    fm = vd.load_datacard(FIXTURES / "good_core.md")
+    fm["release_status"] = "published"
+    findings = vd.check_cross_field(fm, rules, profile="core")
+    alignment = [f for f in findings
+                 if f.field == "workflow.state" and f.code == "INCONSISTENT"]
+    assert alignment, "expected alignment warning"
+    assert alignment[0].severity == "warn"

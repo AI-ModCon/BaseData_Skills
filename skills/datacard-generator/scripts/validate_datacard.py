@@ -275,5 +275,88 @@ def check_conditional_required(data: dict, rules: dict) -> list[Finding]:
     return out
 
 
+def _snake_case(s: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "_", s.lower()).strip("_")
+
+
+def check_cross_field(data: dict, rules: dict, profile: str) -> list[Finding]:
+    out: list[Finding] = []
+
+    # 1. workflow.state <-> release_status alignment (warn).
+    alignment = rules.get("workflow_release_alignment", {}) or {}
+    state = get_field(data, "workflow.state")
+    status = get_field(data, "release_status")
+    if state in alignment and status is not MISSING:
+        allowed = alignment[state]
+        if status not in allowed:
+            out.append(Finding(
+                code="INCONSISTENT",
+                field="workflow.state",
+                severity="warn",
+                message=(f"workflow.state=`{state}` typically aligns with "
+                         f"release_status in {allowed}; got `{status}`"),
+            ))
+
+    # 2. is_primary uniqueness across access.intended_repositories.
+    repos = get_field(data, "access.intended_repositories")
+    if isinstance(repos, list):
+        primaries = [i for i, r in enumerate(repos)
+                     if isinstance(r, dict) and r.get("is_primary") is True]
+        if len(primaries) > 1:
+            out.append(Finding(
+                code="INCONSISTENT",
+                field="access.intended_repositories",
+                severity="error",
+                message=f"more than one repository marked is_primary=true: indices {primaries}",
+            ))
+
+    # 3. features form rule.
+    features = get_field(data, "dataset_info.features")
+    if isinstance(features, list) and len(features) > 0:
+        has_str = any(isinstance(x, str) for x in features)
+        has_obj = any(isinstance(x, dict) for x in features)
+        if has_str and has_obj:
+            out.append(Finding(
+                code="INCONSISTENT",
+                field="dataset_info.features",
+                severity="error",
+                message="features: mix of flat strings and structured objects; pick one form",
+            ))
+        if profile == "ai_ready" and has_str and not has_obj:
+            out.append(Finding(
+                code="INCONSISTENT",
+                field="dataset_info.features",
+                severity="error",
+                message="ai_ready profile requires structured `features` objects, not flat strings",
+            ))
+
+    # 4. filename snake_case match.
+    filename = get_field(data, "datacard.filename")
+    name = get_field(data, "identification.name")
+    if isinstance(filename, str) and isinstance(name, str):
+        expected = f"genesis_datacard_{_snake_case(name)}.md"
+        if filename != expected:
+            out.append(Finding(
+                code="INCONSISTENT",
+                field="datacard.filename",
+                severity="error",
+                message=f"expected `{expected}` from identification.name=`{name}`; got `{filename}`",
+            ))
+
+    # 5. SENSITIVITY_MISMATCH (informational only).
+    doc_tier = get_field(data, "datacard.sensitivity_tier")
+    data_tier = get_field(data, "security.sensitivity_tier")
+    if doc_tier is not MISSING and data_tier is not MISSING and doc_tier != data_tier:
+        out.append(Finding(
+            code="SENSITIVITY_MISMATCH",
+            field="datacard.sensitivity_tier",
+            severity="info",
+            message=(f"datacard tier=`{doc_tier}` differs from data tier=`{data_tier}`; "
+                     "this is often correct — confirm both are set independently"),
+        ))
+
+    return out
+
+
 if __name__ == "__main__":  # pragma: no cover - CLI added in a later task
     sys.exit(0)
