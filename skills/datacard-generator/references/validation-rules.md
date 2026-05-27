@@ -141,6 +141,15 @@ enums:
   dataset_readiness.level: [1, 2, 3]
   dataset_readiness.confidence: [high, medium, low]
   compliance.irb_approved: [true, false, not_applicable]
+  contact.type: [person, organization]
+  stewardship.maintainer.type: [person, organization]
+  dataset_readiness.evaluated_by.type: [person, organization]
+  security.sensitivity_level: [public, internal, confidential, restricted]
+  identification.primary_id.type: [doi, ark, handle, url, osti, local, other]
+  identification.supersedes.type: [doi, ark, handle, url, local, other]
+  identification.superseded_by.type: [doi, ark, handle, url, local, other]
+  identification.parent_collection.identifier.type: [doi, ark, handle, url, local, other]
+  datacard.id.type: [doi, ark, handle, url, local, other]
 ```
 
 Values are sourced from the Genesis v1.0 template comments and Appendix B of the Field Requirements doc. `license.spdx_id` is intentionally not enumerated — the SPDX registry has 600+ entries and is too large to maintain inline; the conditional rule requiring `license.name` when `spdx_id=other` is the only license enforcement needed.
@@ -170,6 +179,8 @@ format_fields:
     - contributors[].person.orcid
     - stewardship.maintainer.person.orcid
     - dataset_readiness.evaluated_by.person.orcid
+    - additional_contacts[].person.orcid
+    - reviews[].reviewed_by.person.orcid
   ror_url:
     - datacard.created_by[].creator.person.affiliation.ror_id
     - datacard.created_by[].creator.organization.ror_id
@@ -183,6 +194,11 @@ format_fields:
     - facilities[].location.ror_id
     - stewardship.maintainer.person.affiliation.ror_id
     - stewardship.maintainer.organization.ror_id
+    - additional_contacts[].person.affiliation.ror_id
+    - reviews[].institution.ror_id
+    - reviews[].reviewed_by.person.ror_id
+    - reviews[].reviewed_by.organization.ror_id
+    - dataset_readiness.evaluated_by.organization.ror_id
   iso8601_date:
     - datacard.created_date
     - datacard.updated_date
@@ -197,6 +213,11 @@ format_fields:
     - security.declassification.review_date
     - contact.valid_until
     - reviews[].review_date
+    - dataset_readiness.evaluated_at
+    - datacard.created_by[].creator.ai_model.date_accessed
+    - access.intended_repositories[].date_deposited
+    - additional_contacts[].valid_until
+    - related_resources.ai_models[].date_accessed
 ```
 
 Paths use `[]` to indicate iteration over each element of a list field.
@@ -219,6 +240,8 @@ conditional_required:
   - when: {security.sensitivity_tier: tier5_regulated_personal}
     require:
       - security.pii.present
+  - when: {security.pii.present: true}
+    require: [security.pii.types]
   - when: {security.pii.deidentification_applied: true}
     require: [security.pii.deidentification_method]
   - when: {license.spdx_id: other}

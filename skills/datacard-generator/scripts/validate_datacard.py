@@ -319,8 +319,8 @@ def check_cross_field(data: dict, rules: dict, profile: str) -> list[Finding]:
             out.append(Finding(
                 code="INCONSISTENT",
                 field="dataset_info.features",
-                severity="error",
-                message="ai_ready profile requires structured `features` objects, not flat strings",
+                severity="warn",
+                message="ai_ready profile recommends structured `features` (with name/type/unit/description) over flat strings",
             ))
 
     # 4. filename snake_case match.

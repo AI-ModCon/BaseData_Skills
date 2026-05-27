@@ -208,3 +208,24 @@ def test_cli_exits_zero_on_good(tmp_path):
     import json
     payload = json.loads(out.stdout)
     assert payload["ok"] is True
+
+
+def test_check_conditional_required_pii_missing_types():
+    rules = vd.load_rules(RULES)
+    fm = vd.load_datacard(FIXTURES / "bad_pii_missing_types.md")
+    findings = vd.check_conditional_required(fm, rules)
+    targets = [f.field for f in findings if f.code == "MISSING_REQUIRED"]
+    assert "security.pii.types" in targets, f"expected pii.types flagged, got {targets}"
+
+
+def test_check_cross_field_features_ai_ready_flat_is_warn_not_error():
+    """ai_ready profile with flat-string features should warn, not error."""
+    rules = vd.load_rules(RULES)
+    fm = vd.load_datacard(FIXTURES / "good_core.md")
+    # Inject flat-string features and pretend we're ai_ready
+    fm.setdefault("dataset_info", {})["features"] = ["temperature", "pressure"]
+    findings = vd.check_cross_field(fm, rules, profile="ai_ready")
+    ai_ready_findings = [f for f in findings if f.field == "dataset_info.features"]
+    assert ai_ready_findings, "expected at least one features finding"
+    assert all(f.severity == "warn" for f in ai_ready_findings), \
+        f"expected warn severity, got {[f.severity for f in ai_ready_findings]}"

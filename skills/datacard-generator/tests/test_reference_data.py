@@ -128,6 +128,12 @@ def test_validation_rules_has_enums_block():
         "dataset_type",
         "access_policy.access_level",
         "access_policy.authorization_required",
+        "contact.type",
+        "stewardship.maintainer.type",
+        "dataset_readiness.evaluated_by.type",
+        "security.sensitivity_level",
+        "identification.primary_id.type",
+        "datacard.id.type",
     }
     missing = expected_fields - set(enums.keys())
     assert not missing, f"enums missing: {missing}"
