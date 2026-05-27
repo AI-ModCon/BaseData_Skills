@@ -237,7 +237,6 @@ When the user asks to convert an existing MODCON v1 datacard:
 - **Live ORCID/ROR/OSTI validation & lookup**: [references/validation-lookups.md](references/validation-lookups.md)
 - **Lookup tables** (enums in human form): [references/lookup-tables.md](references/lookup-tables.md)
 - **Introspection commands**: [references/introspection-commands.md](references/introspection-commands.md)
-- **Datasheet companion**: [references/datasheet_template.md](references/datasheet_template.md) — consult if user mentions "datasheet" questions
 - **Validator**: `scripts/validate_datacard.py`
 - **Introspector**: `scripts/introspect.sh`
 - **Converter**: `scripts/convert_v1_to_genesis.py`
