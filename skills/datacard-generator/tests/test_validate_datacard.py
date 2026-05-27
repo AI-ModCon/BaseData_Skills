@@ -1,0 +1,36 @@
+from pathlib import Path
+import pytest
+
+import validate_datacard as vd
+
+SKILL_ROOT = Path(__file__).resolve().parent.parent
+FIXTURES = SKILL_ROOT / "tests" / "fixtures"
+RULES = SKILL_ROOT / "references" / "validation-rules.md"
+
+
+def test_load_rules_returns_expected_blocks():
+    rules = vd.load_rules(RULES)
+    for key in ("profiles", "enums", "formats", "conditional_required",
+                "workflow_release_alignment", "pub_conditional", "format_fields"):
+        assert key in rules, f"missing block: {key}"
+
+
+def test_load_datacard_returns_frontmatter_dict():
+    fm = vd.load_datacard(FIXTURES / "good_core.md")
+    assert fm["datacard"]["profile"] == "core"
+    assert fm["identification"]["name"] == "Test Core Dataset"
+
+
+def test_expand_profile_required_unions_parents():
+    rules = vd.load_rules(RULES)
+    ai_ready_required = vd.expand_profile_required(rules, "ai_ready")
+    assert "datacard.profile" in ai_ready_required  # from core
+    assert "ai_usage.ai_ready" in ai_ready_required  # from ai_ready
+
+
+def test_get_field_path_returns_nested_value():
+    fm = vd.load_datacard(FIXTURES / "good_core.md")
+    assert vd.get_field(fm, "datacard.profile") == "core"
+    assert vd.get_field(fm, "identification.primary_id.type") == "local"
+    assert vd.get_field(fm, "dataset_info.formats") == ["CSV"]
+    assert vd.get_field(fm, "missing.field") is vd.MISSING

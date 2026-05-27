@@ -86,7 +86,7 @@ The `extends:` chain means: profile X's effective required set is the
 union of its own `required:` and (recursively) all ancestors' required
 sets. So `ai_ready` requires core ∪ extended ∪ ai_ready.
 
-## Pub-conditional fields
+## Pub conditional
 
 ```yaml
 pub_conditional:
