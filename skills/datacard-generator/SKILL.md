@@ -165,13 +165,14 @@ Ask if the user wants to revise any section before finishing.
 
 When the user asks to convert an existing MODCON v1 datacard:
 
-1. Run `python3 scripts/convert_v1_to_genesis.py <v1_path>`.
-2. Inspect the conversion report (mapped / new-required / orphaned).
-3. Ask the user for new required fields (batched 3–5).
-4. Set `datacard.creation_method = "hybrid"` and write a `change_log[0]`
-   entry: `{date: today, datacard_version: "1.0", summary: "Converted from MODCON v1"}`.
-5. Run the validator (step 8 above).
-6. Present the review summary (step 10 above).
+1. Run `python3 scripts/convert_v1_to_genesis.py <v1_path> --json` and capture the JSON report. The report has three lists:
+   - `mapped` — Genesis fields the converter populated from v1 (no user input needed).
+   - `missing_required` — Genesis fields required by the `core` profile that the converter could not map. **Iterate over this list and prompt the user for each** (batched 3–5 per `references/profile-prompts.md`).
+   - `orphans` — v1 fields with no Genesis equivalent. Surface them to the user so they can decide whether to drop or relocate.
+2. After prompting, rerun the converter without `--json` to write the file (`--out <path>`), or compose the final YAML inline and write directly.
+3. Set `datacard.creation_method = "hybrid"` and ensure `change_log[0] = {date: today, datacard_version: "1.0", summary: "Converted from MODCON v1"}` (the converter already does this — verify after writing).
+4. Run the validator (step 8 of the Generate path above).
+5. Present the review summary (step 10 of the Generate path above).
 
 ---
 
