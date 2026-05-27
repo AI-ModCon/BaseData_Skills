@@ -190,3 +190,20 @@ def test_field_guide_exists_and_has_section_anchors():
         "## Appendix D",
     ):
         assert needle in text, f"missing anchor: {needle}"
+
+
+def test_lookup_tables_covers_genesis_axes():
+    path = REF / "lookup-tables.md"
+    assert path.exists()
+    text = path.read_text()
+    for needle in (
+        "OSTI",
+        "tier0_open",
+        "tier6_classified",
+        "CUI",
+        "## Workflow states",
+        "## Release statuses",
+        "## Authorization",
+        "## SPDX",
+    ):
+        assert needle in text, f"missing section/value: {needle}"
