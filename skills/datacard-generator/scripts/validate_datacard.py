@@ -149,36 +149,20 @@ def check_required(data: dict, rules: dict, profile: str) -> list[Finding]:
 
 
 def check_enums(data: dict, rules: dict) -> list[Finding]:
-    """For each field with a defined enum, verify its value is in the set.
-
-    Fields with an `escape_values:` key (e.g., license.spdx_id) accept any
-    value matching the escape list; other values are passed through (the
-    SPDX registry check is informational and not implemented here).
-    """
+    """For each field with a defined enum, verify its value is in the set."""
     enums = rules.get("enums", {}) or {}
     findings: list[Finding] = []
     for field_path, spec in enums.items():
         value = get_field(data, field_path)
         if value is MISSING or value is None:
             continue
-        if isinstance(spec, dict) and "escape_values" in spec:
-            allowed = spec["escape_values"]
-            if value not in allowed:
-                findings.append(Finding(
-                    code="VALIDATION_NOT_AVAILABLE",
-                    field=field_path,
-                    severity="info",
-                    message=f"value `{value}` not verified against authoritative registry",
-                ))
-            continue
-        if isinstance(spec, list):
-            if value not in spec:
-                findings.append(Finding(
-                    code="BAD_ENUM",
-                    field=field_path,
-                    severity="error",
-                    message=f"value `{value}` not in allowed set {spec}",
-                ))
+        if isinstance(spec, list) and value not in spec:
+            findings.append(Finding(
+                code="BAD_ENUM",
+                field=field_path,
+                severity="error",
+                message=f"value `{value}` not in allowed set {spec}",
+            ))
     return findings
 
 

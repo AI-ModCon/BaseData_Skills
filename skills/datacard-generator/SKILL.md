@@ -140,7 +140,6 @@ The validator emits structured codes:
 - `BAD_FORMAT:<field>` — show format hint; re-prompt (ORCID, ROR, DOI, ISO 8601)
 - `INCONSISTENT:<field>` — show both conflicting fields; ask user which to change
 - `SENSITIVITY_MISMATCH` — informational; mention in review summary but do not block
-- `VALIDATION_NOT_AVAILABLE` — can't authoritatively check (e.g., SPDX `other`); mention
 
 ### 9. Address findings
 
