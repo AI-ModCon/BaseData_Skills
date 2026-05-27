@@ -149,20 +149,30 @@ def check_required(data: dict, rules: dict, profile: str) -> list[Finding]:
 
 
 def check_enums(data: dict, rules: dict) -> list[Finding]:
-    """For each field with a defined enum, verify its value is in the set."""
+    """For each field with a defined enum, verify its value is in the set.
+
+    Field paths may contain `[]` for list iteration (e.g.,
+    `reviews[].stage`). Each list element is checked independently and
+    flagged with the concrete path including the index.
+    """
     enums = rules.get("enums", {}) or {}
     findings: list[Finding] = []
-    for field_path, spec in enums.items():
-        value = get_field(data, field_path)
-        if value is MISSING or value is None:
+    for field_template, spec in enums.items():
+        if not isinstance(spec, list):
             continue
-        if isinstance(spec, list) and value not in spec:
-            findings.append(Finding(
-                code="BAD_ENUM",
-                field=field_path,
-                severity="error",
-                message=f"value `{value}` not in allowed set {spec}",
-            ))
+        for concrete_path, value in _walk_path_template(data, field_template):
+            if value is None or value == "":
+                continue
+            if isinstance(value, str) and (value.startswith("${")
+                                            or value.startswith("__")):
+                continue
+            if value not in spec:
+                findings.append(Finding(
+                    code="BAD_ENUM",
+                    field=concrete_path,
+                    severity="error",
+                    message=f"value `{value}` not in allowed set {spec}",
+                ))
     return findings
 
 

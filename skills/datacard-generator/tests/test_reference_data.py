@@ -134,6 +134,10 @@ def test_validation_rules_has_enums_block():
         "security.sensitivity_level",
         "identification.primary_id.type",
         "datacard.id.type",
+        "datacard.created_by[].role",
+        "reviews[].stage",
+        "authors[].role",
+        "related_resources.publications[].type",
     }
     missing = expected_fields - set(enums.keys())
     assert not missing, f"enums missing: {missing}"

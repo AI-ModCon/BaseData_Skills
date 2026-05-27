@@ -229,3 +229,22 @@ def test_check_cross_field_features_ai_ready_flat_is_warn_not_error():
     assert ai_ready_findings, "expected at least one features finding"
     assert all(f.severity == "warn" for f in ai_ready_findings), \
         f"expected warn severity, got {[f.severity for f in ai_ready_findings]}"
+
+
+def test_check_enums_walks_list_templates_good():
+    """Verify list-template enums don't fire when values are valid."""
+    rules = vd.load_rules(RULES)
+    fm = vd.load_datacard(FIXTURES / "good_core.md")
+    # good_core has datacard.created_by[0] with role=initial_creation (valid) and creator.type=ai_model (valid)
+    findings = vd.check_enums(fm, rules)
+    list_findings = [f for f in findings if "[" in f.field]
+    assert list_findings == [], f"expected no list-element enum failures, got: {list_findings}"
+
+
+def test_check_enums_flags_bad_review_stage():
+    rules = vd.load_rules(RULES)
+    fm = vd.load_datacard(FIXTURES / "bad_enum_review_stage.md")
+    findings = vd.check_enums(fm, rules)
+    bad = [f for f in findings if f.code == "BAD_ENUM" and "reviews[0].stage" in f.field]
+    assert len(bad) == 1, f"expected 1 BAD_ENUM on reviews[0].stage, got: {[f.field for f in findings]}"
+    assert "BOGUS_STAGE" in bad[0].message
