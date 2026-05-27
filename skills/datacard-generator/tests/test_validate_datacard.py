@@ -61,3 +61,20 @@ def test_finding_is_dataclass_with_severity():
     assert all(hasattr(f, "field") for f in findings)
     assert all(hasattr(f, "severity") for f in findings)
     assert all(f.severity in ("error", "warn", "info") for f in findings)
+
+
+def test_check_enums_passes_good_core():
+    rules = vd.load_rules(RULES)
+    fm = vd.load_datacard(FIXTURES / "good_core.md")
+    findings = vd.check_enums(fm, rules)
+    assert findings == [], f"unexpected: {findings}"
+
+
+def test_check_enums_flags_bad_classification():
+    rules = vd.load_rules(RULES)
+    fm = vd.load_datacard(FIXTURES / "bad_enum_classification.md")
+    findings = vd.check_enums(fm, rules)
+    bad = [f for f in findings if f.field == "security.classification"]
+    assert len(bad) == 1
+    assert bad[0].code == "BAD_ENUM"
+    assert "BOGUS" in bad[0].message
