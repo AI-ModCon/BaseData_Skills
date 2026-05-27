@@ -108,3 +108,53 @@ def test_validation_rules_core_required_includes_essentials():
     }
     missing = must_have - core_required
     assert not missing, f"core required is missing: {missing}"
+
+
+def test_validation_rules_has_enums_block():
+    blocks = _fenced_yaml_blocks(REF / "validation-rules.md")
+    assert "enums" in blocks
+    enums = blocks["enums"]
+    expected_fields = {
+        "datacard.profile",
+        "datacard.creation_method",
+        "datacard.sensitivity_tier",
+        "datacard.access_level",
+        "security.classification",
+        "security.sensitivity_tier",
+        "security.export_control",
+        "workflow.state",
+        "release_status",
+        "object_type",
+        "dataset_type",
+        "access_policy.access_level",
+        "access_policy.authorization_required",
+        "license.spdx_id",
+    }
+    missing = expected_fields - set(enums.keys())
+    assert not missing, f"enums missing: {missing}"
+    assert "core" in enums["datacard.profile"]
+    assert "tier0_open" in enums["datacard.sensitivity_tier"]
+    assert "CUI" in enums["security.classification"]
+    assert "embargo" in enums["workflow.state"]
+
+
+def test_validation_rules_has_formats_block():
+    blocks = _fenced_yaml_blocks(REF / "validation-rules.md")
+    assert "formats" in blocks
+    fmts = blocks["formats"]
+    for key in ("orcid", "ror_url", "doi", "iso8601_date"):
+        assert key in fmts, f"format `{key}` missing"
+    for key, pat in fmts.items():
+        re.compile(pat)
+
+
+def test_validation_rules_has_conditional_required_block():
+    blocks = _fenced_yaml_blocks(REF / "validation-rules.md")
+    assert "conditional_required" in blocks
+    rules = blocks["conditional_required"]
+    assert isinstance(rules, list)
+    embargo_rule = next(
+        (r for r in rules if r.get("when", {}).get("workflow.state") == "embargo"), None
+    )
+    assert embargo_rule is not None, "no rule for workflow.state=embargo"
+    assert "workflow.embargo_until" in embargo_rule["require"]
