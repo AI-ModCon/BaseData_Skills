@@ -34,3 +34,30 @@ def test_get_field_path_returns_nested_value():
     assert vd.get_field(fm, "identification.primary_id.type") == "local"
     assert vd.get_field(fm, "dataset_info.formats") == ["CSV"]
     assert vd.get_field(fm, "missing.field") is vd.MISSING
+
+
+def test_check_required_passes_on_good_core():
+    rules = vd.load_rules(RULES)
+    fm = vd.load_datacard(FIXTURES / "good_core.md")
+    findings = vd.check_required(fm, rules, profile="core")
+    assert findings == [], f"unexpected findings: {findings}"
+
+
+def test_check_required_flags_missing_name():
+    rules = vd.load_rules(RULES)
+    fm = vd.load_datacard(FIXTURES / "bad_missing_required.md")
+    findings = vd.check_required(fm, rules, profile="core")
+    codes = [f.code for f in findings]
+    assert any(c == "MISSING_REQUIRED" for c in codes)
+    targets = [f.field for f in findings if f.code == "MISSING_REQUIRED"]
+    assert "identification.name" in targets
+
+
+def test_finding_is_dataclass_with_severity():
+    rules = vd.load_rules(RULES)
+    fm = vd.load_datacard(FIXTURES / "bad_missing_required.md")
+    findings = vd.check_required(fm, rules, profile="core")
+    assert all(hasattr(f, "code") for f in findings)
+    assert all(hasattr(f, "field") for f in findings)
+    assert all(hasattr(f, "severity") for f in findings)
+    assert all(f.severity in ("error", "warn", "info") for f in findings)

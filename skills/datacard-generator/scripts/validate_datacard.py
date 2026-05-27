@@ -100,5 +100,53 @@ def get_field(data: dict, path: str) -> Any:
     return cur
 
 
+@dataclass
+class Finding:
+    code: str
+    field: str
+    severity: str = "error"
+    message: str = ""
+
+    def as_dict(self) -> dict:
+        return {"code": self.code, "field": self.field,
+                "severity": self.severity, "message": self.message}
+
+
+def _is_present(value: Any) -> bool:
+    """A field counts as present unless it's MISSING, None, '', or [].
+
+    Placeholder strings like `${VALUE}` or `__VALUE__` count as absent so
+    template scaffolding doesn't pass validation.
+    """
+    if value is MISSING or value is None:
+        return False
+    if isinstance(value, str):
+        if value == "":
+            return False
+        if value.startswith("${") and value.endswith("}"):
+            return False
+        if value.startswith("__") and value.endswith("__"):
+            return False
+    if isinstance(value, (list, dict)) and len(value) == 0:
+        return False
+    return True
+
+
+def check_required(data: dict, rules: dict, profile: str) -> list[Finding]:
+    """Walk every dotted-path required for `profile`; flag any absent."""
+    required = expand_profile_required(rules, profile)
+    findings: list[Finding] = []
+    for path in required:
+        value = get_field(data, path)
+        if not _is_present(value):
+            findings.append(Finding(
+                code="MISSING_REQUIRED",
+                field=path,
+                severity="error",
+                message=f"required by profile `{profile}` but missing or placeholder",
+            ))
+    return findings
+
+
 if __name__ == "__main__":  # pragma: no cover - CLI added in a later task
     sys.exit(0)
