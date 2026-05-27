@@ -174,3 +174,19 @@ def test_profile_prompts_exists_and_has_all_profiles():
             assert "title" in batch
             assert "fields" in batch
             assert 1 <= len(batch["fields"]) <= 5, "batch size must be 1-5"
+
+
+def test_field_guide_exists_and_has_section_anchors():
+    path = REF / "genesis_field_guide.md"
+    assert path.exists(), f"missing: {path}"
+    text = path.read_text()
+    for needle in (
+        "## Section 1: Datacard Metadata",
+        "## Section 2:",
+        "## Section 3:",
+        "## Section 4:",
+        "## Section 5:",
+        "## Appendix A",
+        "## Appendix D",
+    ):
+        assert needle in text, f"missing anchor: {needle}"
