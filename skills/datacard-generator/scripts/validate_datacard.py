@@ -240,5 +240,40 @@ def check_formats(data: dict, rules: dict) -> list[Finding]:
     return findings
 
 
+def _match_condition(data: dict, when: dict, negate: bool = False) -> bool:
+    for key, expected in when.items():
+        actual = get_field(data, key)
+        if actual is MISSING:
+            return False if not negate else True
+        if (actual == expected) == negate:
+            return False
+    return True
+
+
+def check_conditional_required(data: dict, rules: dict) -> list[Finding]:
+    out: list[Finding] = []
+    for rule in rules.get("conditional_required", []) or []:
+        when = rule.get("when")
+        when_not = rule.get("when_not")
+        severity = rule.get("severity", "error")
+        triggered = False
+        if when:
+            triggered = _match_condition(data, when, negate=False)
+        elif when_not:
+            triggered = _match_condition(data, when_not, negate=True)
+        if not triggered:
+            continue
+        for path in rule.get("require", []) or []:
+            if not _is_present(get_field(data, path)):
+                trigger_desc = when or {f"NOT {k}": v for k, v in (when_not or {}).items()}
+                out.append(Finding(
+                    code="MISSING_REQUIRED",
+                    field=path,
+                    severity=severity,
+                    message=f"required when {trigger_desc}",
+                ))
+    return out
+
+
 if __name__ == "__main__":  # pragma: no cover - CLI added in a later task
     sys.exit(0)

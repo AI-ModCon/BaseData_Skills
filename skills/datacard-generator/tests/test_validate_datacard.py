@@ -93,3 +93,18 @@ def test_check_formats_flags_bad_orcid():
     findings = vd.check_formats(fm, rules)
     orcid_failures = [f for f in findings if f.code == "BAD_FORMAT" and "orcid" in f.field]
     assert len(orcid_failures) >= 1
+
+
+def test_check_conditional_required_no_findings_when_no_trigger():
+    rules = vd.load_rules(RULES)
+    fm = vd.load_datacard(FIXTURES / "good_core.md")
+    findings = vd.check_conditional_required(fm, rules)
+    assert findings == [], f"unexpected: {findings}"
+
+
+def test_check_conditional_required_embargo_missing_until():
+    rules = vd.load_rules(RULES)
+    fm = vd.load_datacard(FIXTURES / "bad_conditional_embargo.md")
+    findings = vd.check_conditional_required(fm, rules)
+    targets = [f.field for f in findings if f.code == "MISSING_REQUIRED"]
+    assert "workflow.embargo_until" in targets
