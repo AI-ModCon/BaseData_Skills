@@ -264,6 +264,12 @@ conditional_required:
     require: [security.pii.deidentification_method]
   - when: {license.spdx_id: other}
     require: [license.name]
+  # NOTE: list-template (`[]`) support in conditional_required is limited —
+  # the rule triggers if ANY array element has spdx_id=other but the
+  # require path also resolves at the array level. Per-element enforcement
+  # is a known gap pending engine work.
+  - when: {"additional_licenses[].spdx_id": other}
+    require: ["additional_licenses[].name"]
   - when: {datacard.profile: ai_ready}
     require:
       - categorization.task_category

@@ -57,10 +57,24 @@ prompts:
           ask: "Dataset access level: open | restricted | controlled."
         - path: access_policy.authorization_required
           ask: "Authorization: none | account | user_agreement | data_use_agreement | sponsor_approval | export_control_review | irb_approval | other."
-    - title: "Contact"
+    - title: "Contact (basics)"
       fields:
         - path: contact.type
           ask: "Contact type: person | organization."
+    - title: "Contact (person details — if contact.type=person)"
+      fields:
+        - path: contact.person.given_name
+          ask: "Given (first) name."
+        - path: contact.person.family_name
+          ask: "Family (last) name."
+        - path: contact.person.email
+          ask: "Email address (used for inquiries about this dataset)."
+        - path: contact.person.affiliation.name
+          ask: "Affiliation organization name."
+    - title: "Contact (organization details — if contact.type=organization)"
+      fields:
+        - path: contact.organization.name
+          ask: "Organization name (used when no single named contact exists)."
     - title: "Categorization & data"
       fields:
         - path: categorization.science_domain
