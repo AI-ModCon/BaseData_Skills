@@ -17,7 +17,7 @@ FIXTURES = SKILL_ROOT / "tests" / "fixtures"
 def test_pipeline_introspect_then_validate_then_convert(tmp_path):
     # 1. Introspect
     intro = subprocess.run(
-        ["bash", str(SKILL_ROOT / "scripts" / "introspect.sh"),
+        [sys.executable, str(SKILL_ROOT / "scripts" / "introspect.py"),
          str(FIXTURES / "sample_dataset")],
         capture_output=True, text=True, check=True,
     )

@@ -22,7 +22,7 @@ Copy this checklist and check off steps as you go.
 ```
 Progress:
 - [ ] 1. Gather context (dataset_path + profile)
-- [ ] 2. Run scripts/introspect.sh on the dataset directory
+- [ ] 2. Run python3 scripts/introspect.py on the dataset directory
 - [ ] 3. Load profile-specific guidance
 - [ ] 4. Auto-fill YAML from introspect output
 - [ ] 5. Confirm dataset_readiness.level with the user
@@ -51,7 +51,7 @@ first**. The profile dictates which fields are required.
 
 ### 2. Introspect the directory
 
-Run `scripts/introspect.sh <dataset_path>` and capture the JSON. See
+Run `python3 scripts/introspect.py <dataset_path>` and capture the JSON. See
 [references/introspection-commands.md](references/introspection-commands.md)
 for what each output field means.
 
@@ -80,11 +80,11 @@ frontmatter using this decision table:
 | `identification.version` | from CITATION.cff or default "1.0" | prompt |
 | `description.summary` | from README first paragraph | prompt |
 | `description.keywords` | from README / CITATION.cff | prompt |
-| `dataset_info.formats` | introspect.sh `formats` | prompt |
-| `dataset_info.features` | introspect.sh `sample_columns` (flat for core/extended; structured for ai_ready) | prompt at ai_ready |
-| `dataset_info.splits` | introspect.sh `splits_detected` | leave empty |
-| `dataset_scale.record_count` / `.compressed_bytes` | introspect.sh | prompt |
-| `license.spdx_id` | introspect.sh `license_hint` | prompt at extended+ |
+| `dataset_info.formats` | introspect.py `formats` | prompt |
+| `dataset_info.features` | introspect.py `sample_columns` (flat for core/extended; structured for ai_ready) | prompt at ai_ready |
+| `dataset_info.splits` | introspect.py `splits_detected` | leave empty |
+| `dataset_scale.record_count` / `.compressed_bytes` | introspect.py | prompt |
+| `license.spdx_id` | introspect.py `license_hint` | prompt at extended+ |
 | `authors[]` | from CITATION.cff | prompt at extended+ |
 | `citation.preferred_citation` | from CITATION.cff bibtex | prompt at `[pub]` |
 | `provenance.was_generated_by` | always prompt (`[core]`, often forgotten) | — |
@@ -238,5 +238,5 @@ When the user asks to convert an existing MODCON v1 datacard:
 - **Lookup tables** (enums in human form): [references/lookup-tables.md](references/lookup-tables.md)
 - **Introspection commands**: [references/introspection-commands.md](references/introspection-commands.md)
 - **Validator**: `scripts/validate_datacard.py`
-- **Introspector**: `scripts/introspect.sh`
+- **Introspector**: `scripts/introspect.py`
 - **Converter**: `scripts/convert_v1_to_genesis.py`

@@ -1,6 +1,6 @@
 # Introspection commands
 
-Commands SKILL.md can run (directly or via `scripts/introspect.sh`) to
+Commands SKILL.md can run (directly or via `python3 scripts/introspect.py`) to
 auto-fill Genesis v1.0 datacard fields. Each command's output maps to one
 or more YAML fields.
 
@@ -51,8 +51,8 @@ or more YAML fields.
 |---------|---------|
 | `find "$DIR" -maxdepth 3 -type d -iname 'train' -o -iname 'test' -o -iname 'val*'` | `dataset_info.splits` |
 
-## Bulk inspection (use scripts/introspect.sh)
+## Bulk inspection (use scripts/introspect.py)
 
-`scripts/introspect.sh <dataset_dir>` runs all the above (where supported)
-and emits JSON. SKILL.md should prefer this over running commands ad hoc
-unless the auto-fill missed something specific.
+`python3 scripts/introspect.py <dataset_dir>` runs all the above and emits
+JSON. SKILL.md should prefer this over running commands ad hoc unless the
+auto-fill missed something specific.

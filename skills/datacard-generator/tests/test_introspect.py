@@ -1,15 +1,16 @@
 import json
 import subprocess
+import sys
 from pathlib import Path
 
 SKILL_ROOT = Path(__file__).resolve().parent.parent
 FIXTURES = SKILL_ROOT / "tests" / "fixtures"
-INTROSPECT = SKILL_ROOT / "scripts" / "introspect.sh"
+INTROSPECT = SKILL_ROOT / "scripts" / "introspect.py"
 
 
 def _run(path: Path) -> dict:
     result = subprocess.run(
-        ["bash", str(INTROSPECT), str(path)],
+        [sys.executable, str(INTROSPECT), str(path)],
         capture_output=True, text=True, check=True,
     )
     return json.loads(result.stdout)
