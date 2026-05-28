@@ -1,6 +1,8 @@
 # Live Enrichment Reference
 
-When the user provides ORCID, ROR, or funding identifiers, the skill can resolve them against public APIs to pre-fill names, affiliations, and funding details. This file is the agent's guide to those APIs. Use the `WebFetch` tool for all live calls.
+The skill's workflow step 7 ("Cross-check identifiers via live APIs") resolves every ORCID, ROR, DOI, and OSTI award number in the datacard against its public API — **even when the user already provided a value**. The goal is two-fold: (1) fill missing fields the authoritative source has (affiliations, names, emails), and (2) catch mistyped identifiers that would otherwise resolve to the wrong entity or 404 silently. This file is the agent's guide to those APIs. Use the `WebFetch` tool for all live calls.
+
+Treat every resolved value as a candidate for cross-check, not as authoritative. When the API returns a value that conflicts with the datacard, **present both to the user** rather than silently overwriting.
 
 **Format validation lives in `validation-rules.md`** (the `formats:` and `format_fields:` blocks) and is enforced by `scripts/validate_datacard.py`. This doc covers only the unique value-add: checksum verification, live API endpoints, and DOE-specific OSTI guidance.
 

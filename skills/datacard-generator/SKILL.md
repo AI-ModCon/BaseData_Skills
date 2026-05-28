@@ -26,10 +26,11 @@ Progress:
 - [ ] 4. Auto-fill YAML from introspect output
 - [ ] 5. Confirm dataset_readiness.level with the user
 - [ ] 6. Prompt for remaining required fields in batches
-- [ ] 7. Compute filename and write the datacard
-- [ ] 8. Run scripts/validate_datacard.py
-- [ ] 9. Address findings; re-validate
-- [ ] 10. Present review summary
+- [ ] 7. Cross-check every ORCID/ROR/DOI/OSTI identifier via live APIs
+- [ ] 8. Compute filename and write the datacard
+- [ ] 9. Run scripts/validate_datacard.py
+- [ ] 10. Address findings; re-validate
+- [ ] 11. Present review summary
 ```
 
 ### 1. Gather context
@@ -89,9 +90,9 @@ frontmatter using this decision table:
 | `provenance.was_generated_by` | always prompt (`[core]`, often forgotten) | — |
 | `_repository.*` | **NEVER** — system-owned | — |
 
-For ORCID / ROR / funding-ID live enrichment via public APIs, see
-[references/live-enrichment.md](references/live-enrichment.md). Format
-validation is handled automatically by the validator.
+ORCID, ROR, DOI, and OSTI award numbers gathered here will be
+**cross-checked against their public APIs in step 7** — not optional.
+Format validation is handled automatically by the validator.
 
 ### 5. Confirm `dataset_readiness.level`
 
@@ -111,7 +112,48 @@ Present auto-discovered values for confirmation. Then ask for unfilled
 required fields. Ask **3–5 at a time** following the batches in
 `references/profile-prompts.md`. Stop and confirm after each batch.
 
-### 7. Filename + write
+### 7. Cross-check identifiers via live APIs
+
+For EVERY ORCID, ROR, DOI, and OSTI award number in the datacard —
+whether the user provided it or introspection inferred it — resolve it
+against the public API per `references/live-enrichment.md`. **Do not
+skip this step.** Run it even when the field is already populated. The
+goal is to catch mistyped IDs, mismatched names, and missing fields that
+the authoritative source already has.
+
+Identifiers to check (when present):
+
+- Every `authors[].person.orcid` and `authors[].person.affiliation.ror_id`
+- Every `authors[].organization.ror_id`
+- Every `contributors[].person.orcid` and `contributors[].person.affiliation.ror_id`
+- Every `contributors[].organization.ror_id`
+- `contact.person.orcid` and `contact.person.affiliation.ror_id`
+- `contact.organization.ror_id`
+- Every `additional_contacts[].person.orcid` and `additional_contacts[].person.affiliation.ror_id`
+- `stewardship.maintainer.person.orcid` and `stewardship.maintainer.person.affiliation.ror_id`
+- `stewardship.maintainer.organization.ror_id`
+- `dataset_readiness.evaluated_by.person.orcid` and `dataset_readiness.evaluated_by.organization.ror_id`
+- Every `reviews[].reviewed_by.person.orcid` and `reviews[].institution.ror_id`
+- Every `sponsor_organizations[].ror_id` and `sponsor_organizations[].award_number` (the latter via OSTI)
+- Every `research_organizations[].ror_id`
+- Every `facilities[].ror_id` and `facilities[].location.ror_id`
+- `identification.primary_id.value` (if `type: doi`)
+- Every `identification.additional_ids[].value` of type `doi`
+- Every `related_resources.datasets[].identifier.value` (if `type: doi`)
+- Every `related_resources.publications[].value` (if `type: doi` or `arxiv`)
+
+For each lookup:
+
+- **Clean match** (API resolves; name/affiliation match the datacard) — silent pass.
+- **Mismatch** (API resolves but returns a different name/affiliation than the datacard) — present both side-by-side and ask the user which is correct.
+- **Datacard is incomplete** (API has fields the datacard doesn't, e.g., user gave ORCID but no affiliation; ORCID returns one) — offer to add the missing values.
+- **Does not resolve** (404, network error, malformed ID) — warn: *"`<field>` value `<X>` does not resolve via `<API>`. Likely typo. Confirm or correct?"*
+- **Rate-limited or temporarily unavailable** — retry once after a short delay; if still failing, log a note and move on (don't block the workflow).
+
+Use the `WebFetch` tool for all calls. Endpoints, headers, and field-extraction recipes are in
+[references/live-enrichment.md](references/live-enrichment.md).
+
+### 8. Filename + write
 
 **Filename rule:** `genesis_datacard_<snake_case(identification.name)>.md`,
 where `snake_case` lowercases the name and replaces any non-alphanumeric
@@ -141,7 +183,7 @@ removed entirely — they are guidance for the author, not content.
 
 Verify after writing: `grep -E '\[!TODO\]|<REPLACE:|<INSTRUCTIONS:|<metadata_key:|\$\{|__VALUE__' <output_file>` should return no matches.
 
-### 8. Validate
+### 9. Validate
 
 Run:
 
@@ -157,13 +199,15 @@ The validator emits structured codes:
 - `INCONSISTENT:<field>` — show both conflicting fields; ask user which to change
 - `SENSITIVITY_MISMATCH` — informational; mention in review summary but do not block
 
-### 9. Address findings
+### 10. Address findings
 
-Loop steps 6 → 7 → 8 until `--json` output has `"ok": true`. **Do not
-claim done with un-addressed errors.** `warn` and `info` severity
+Loop steps 6 → 7 → 8 → 9 until `--json` output has `"ok": true`. **Do not
+claim done with un-addressed errors.** When the loop returns to step 7,
+re-enrich only newly added or modified identifiers, not the entire set.
+`warn` and `info` severity
 findings can stand in the review summary but errors must be resolved.
 
-### 10. Review summary
+### 11. Review summary
 
 Present:
 - Auto-populated fields (count + brief list)
@@ -188,8 +232,12 @@ When the user asks to convert an existing MODCON v1 datacard:
 2. After prompting, rerun the converter without `--json` to write the file (`--out <path>`), or compose the final YAML inline and write directly.
 3. Set `datacard.creation_method = "hybrid"` and ensure `change_log[0] = {date: today, datacard_version: "1.0", summary: "Converted from MODCON v1"}` (the converter already does this — verify after writing).
 4. **Fill the markdown body** of the converted file using the YAML you just wrote, following `references/body-fill-guide.md`. The converter only fills the YAML half — body-fill is the agent's responsibility, same as the Generate path.
-5. Run the validator (step 8 of the Generate path above).
-6. Present the review summary (step 10 of the Generate path above).
+5. **Cross-check every identifier via live APIs** following step 7 of the
+   Generate path above. The converter pulls v1 identifiers in v1 format
+   (ORCIDs may be unverified, ROR IDs may be partial) — enrichment is
+   especially important here.
+6. Run the validator (step 9 of the Generate path above).
+7. Present the review summary (step 11 of the Generate path above).
 
 ---
 
