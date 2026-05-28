@@ -1,4 +1,18 @@
-<!-- LOCAL FIX: citation.preferred_citation YAML block reformatted to parse cleanly. Original upstream at /Users/jlbez/Documents/repositories/data-cards/template/genesis_datacard_merged_shared.md has buggy indent. -->
+<!--
+LOCAL FIX: the citation.preferred_citation block has been minimally reformatted to parse under spec-conforming YAML parsers.
+
+Verified failures on the upstream original (`/Users/jlbez/Documents/repositories/data-cards/template/genesis_datacard_merged_shared.md`) at line 796, col 5:
+- PyYAML: safe_load, full_load, BaseLoader — all fail with "found character '@' that cannot start any token"
+- ruamel.yaml: same failure
+- js-yaml: "bad indentation of a mapping entry (796:5)"
+- eemeli/yaml (YAML 1.2 spec): "All mapping items must start at the same column"
+
+Root cause: `preferred_citation: |` opens a literal block scalar. Inside that block, the inline `# IMPORTANT...` comment on the next line is LITERAL content (not a YAML comment) and establishes block indent at column 43. The `@dataset{...}` line below is at column 4, which is less than 43, so YAML closes the block scalar and tries to parse `@dataset` as a new token — invalid.
+
+Fix applied here: the two inline comments were moved to standalone YAML comment lines ABOVE `preferred_citation:` so they no longer participate in the block scalar's indent calculation. The BibTeX content is semantically identical.
+
+Suggested upstream fix: report this to the Genesis Mission datacard team. The same minimal edit applied here would resolve it everywhere.
+-->
 ---
 # ============================================================
 # GENESIS MISSION DATACARD v1.0
