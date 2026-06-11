@@ -60,8 +60,7 @@ what each output field means.
 
 ### 3. Load capability-specific guidance
 
-Read `references/profile-prompts.md` (will be renamed to `capability-prompts.md`
-in a follow-up; treat it as the per-capability prompt sequence for now).
+Read `references/capability-prompts.md` (the per-capability prompt sequence).
 
 For deep field-by-field explanation, load the relevant section of
 `references/genesis_field_guide.md` only as needed (the file is large).
@@ -125,7 +124,7 @@ level 3, 2-3 maps to level 2, 1 maps to level 1. Confirm with the user.
 
 Present auto-discovered values for confirmation. Then ask for unfilled
 required fields. Ask **3-5 at a time** following the batches in
-`references/profile-prompts.md`. Stop and confirm after each batch.
+`references/capability-prompts.md`. Stop and confirm after each batch.
 
 **Key vocabulary changes in v2** (full list in `references/lookup-tables.md`):
 
@@ -314,7 +313,7 @@ When the user asks to convert an existing MODCON v1 datacard:
 - **JSON Schema** (validator source of truth): `references/genesis_datacard.schema.json`
 - **LinkML schema source**: `references/genesis_datacard_linkml.yaml`
 - **Field-by-field guidance**: [references/genesis_field_guide.md](references/genesis_field_guide.md)
-- **Per-capability prompts**: [references/profile-prompts.md](references/profile-prompts.md) (to be renamed)
+- **Per-capability prompts**: [references/capability-prompts.md](references/capability-prompts.md)
 - **Body-fill guide**: [references/body-fill-guide.md](references/body-fill-guide.md)
 - **Lookup tables** (enums, vocabularies): [references/lookup-tables.md](references/lookup-tables.md)
 - **Validation extras** (warn-level rules): [references/validation-rules.md](references/validation-rules.md)
