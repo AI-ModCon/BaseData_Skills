@@ -241,7 +241,7 @@ discoverability:
                                                 # Add a new entry every time the data card is updated.
                                                 # Do not overwrite or delete prior entries.
       - change_date: "${YYYY-MM-DD}"                   # [discoverability_required] ISO 8601 date of this change
-        data_card_version: "1.0"                 # [discoverability_required] Data card version after this change; pre-filled for initial creation
+        datacard_version: "1.0"                 # [discoverability_required] Data card version after this change; pre-filled for initial creation
         summary: "Initial creation"             # [discoverability_required] Brief description of what changed and why.
                                                 # Update this text for all subsequent revisions.
                                                 # e.g., "Updated license to CC-BY-4.0"

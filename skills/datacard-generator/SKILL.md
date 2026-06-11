@@ -78,7 +78,7 @@ using this decision table (paths use v2 capability-container structure):
 |---|---|---|
 | `discoverability.datacard.created_date` / `.updated_date` | always (today, ISO 8601) | — |
 | `discoverability.datacard.creation_method` | always → `"Hybrid"` (Title case in v2) | — |
-| `discoverability.datacard.change_log[0]` | always (date, `data_card_version: "1.0"`, "Initial creation" or "Converted from MODCON v1") | — |
+| `discoverability.datacard.change_log[0]` | always (`change_date`, `datacard_version: "1.0"`, "Initial creation" or "Converted from MODCON v1") | — |
 | `discoverability.datacard.filename` | computed from `discoverability.identification.name` (see Filename rule below) | — |
 | `discoverability.datacard.language` | always → `en` (override if README is non-English) | — |
 | `discoverability.datacard.created_by[]` | always (AI model first if Hybrid; see Gotcha #4) | — |
@@ -247,7 +247,7 @@ When the user asks to convert an existing MODCON v1 datacard:
    - `orphans` — v1 fields with no v2 equivalent.
 2. After prompting, rerun the converter or compose the final YAML inline.
 3. Set `discoverability.datacard.creation_method = "Hybrid"` and ensure
-   `change_log[0] = {date: today, data_card_version: "1.0", summary: "Converted from MODCON v1"}`.
+   `change_log[0] = {change_date: today, datacard_version: "1.0", summary: "Converted from MODCON v1"}`.
 4. **Fill the markdown body** using `references/body-fill-guide.md`.
 5. **Cross-check every identifier via live APIs** (step 7 of the Generate path).
 6. Run the validator (step 9 of the Generate path).
@@ -288,7 +288,7 @@ When the user asks to convert an existing MODCON v1 datacard:
 
 8. **`change_log` is append-only.** On re-runs, add a new entry plus
    `updated_date` bump. Never edit or delete prior entries. The field
-   name inside each entry is `data_card_version` (not `datacard_version`).
+   name inside each entry is `datacard_version` (the upstream template at line 244 has a typo — `data_card_version` — that conflicts with the schema; our local copy is fixed).
 
 9. **`_repository` block is system-owned.** Do not populate. Leave it
    as-is in the template (the underscore prefix is the parser signal).
