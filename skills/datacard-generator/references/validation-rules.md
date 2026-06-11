@@ -1,317 +1,47 @@
-# Validation rules
+# Validation extras
 
-This file is the single source of truth for what fields are required per
-profile, what enums fields can take, and what format patterns to enforce.
+The bulk of Genesis Datacard validation lives in
+`references/genesis_datacard.schema.json` (upstream-vendored JSON Schema, draft 2019-09)
+and is applied automatically by `scripts/validate_datacard.py`.
 
-It is read by `scripts/validate_datacard.py` at runtime via fenced YAML
-blocks tagged by their `##` section heading. **Do not change a section
-heading or fence language without also updating the parser.**
+This file documents the **handful of rules JSON Schema cannot express** — they
+live in the validator's `check_extras()` function (`scripts/validate_datacard.py`).
 
-## Profiles
+## Filename rule (warn)
 
-```yaml
-profiles:
-  core:
-    required:
-      - datacard.datacard_version
-      - datacard.profile
-      - datacard.creation_method
-      - datacard.created_date
-      - datacard.updated_date
-      - datacard.change_log
-      - datacard.created_by
-      - datacard.filename
-      - datacard.language
-      - datacard.sensitivity_tier
-      - datacard.access_level
-      - identification.name
-      - identification.project
-      - identification.version
-      - identification.primary_id.type
-      - identification.primary_id.value
-      - description.summary
-      - description.keywords
-      - object_type
-      - dataset_type
-      - release_status
-      - workflow.state
-      - security.classification
-      - security.sensitivity_tier
-      - security.export_control
-      - access_policy.sensitivity_tier
-      - access_policy.access_level
-      - access_policy.authorization_required
-      - contact.type
-      - categorization.science_domain
-      - dataset_info.formats
-      - provenance.was_generated_by
-      - sponsor_organizations
-      - research_organizations
-  extended:
-    extends: core
-    required:
-      - dates.data_collection_start
-      - dates.data_collection_end
-      - security.distribution_statement
-      - compliance.doe_data_management_plan
-      - compliance.osti_elink2_metadata_compliant
-  ai_ready:
-    extends: extended
-    required:
-      - categorization.task_category
-      - categorization.task_subcategory
-      - ai_usage.ai_ready
-      - ai_usage.training_use_allowed
-      - ai_usage.inference_use_allowed
-      - ai_usage.evaluation_use_allowed
-      - ai_usage.human_review_required
-      - data_quality.completeness
-      - data_quality.known_issues
-      - data_quality.validation_methods
-      - integrity.checksum_available
-  sensitive:
-    extends: extended
-    required:
-      - security.pii.present
-      - compliance.export_control_reviewed
-      - compliance.irb_approved
-      - compliance.security_review_completed
-```
+`datacard.filename` must equal `genesis_datacard_<snake_case(identification.name)>.md`,
+where `snake_case` lowercases the dataset name and replaces any non-alphanumeric
+run with a single underscore.
 
-Required-field matrix per profile. Sourced from Appendix D of the Genesis
-Mission Datacard v1.0 Field Requirements document. Field names use dotted
-paths into the YAML frontmatter (e.g., `identification.primary_id.value`).
+- Severity: `warn` (informational; doesn't block validation)
+- Path checked (v2): `discoverability.datacard.filename` ↔ `discoverability.identification.name`
+- Legacy path checked: `datacard.filename` ↔ `identification.name` (for v1-shaped datacards)
 
-The `extends:` chain means: profile X's effective required set is the
-union of its own `required:` and (recursively) all ancestors' required
-sets. So `ai_ready` requires core ∪ extended ∪ ai_ready.
+## Workflow ↔ release_status alignment (warn)
 
-## Enums
+The workflow state of the dataset should align with its release status. Mismatches
+are not errors but should be flagged.
 
-```yaml
-enums:
-  datacard.profile: [core, extended, ai_ready, sensitive]
-  datacard.creation_method: [manual, automated, hybrid]
-  datacard.sensitivity_tier:
-    - tier0_open
-    - tier1_controlled_research
-    - tier2_proprietary
-    - tier3_sensitive
-    - tier4_export_controlled
-    - tier5_regulated_personal
-    - tier6_classified
-  datacard.access_level: [open, restricted, controlled]
-  security.classification: [U, CUI, C, S, TS]
-  security.sensitivity_tier:
-    - tier0_open
-    - tier1_controlled_research
-    - tier2_proprietary
-    - tier3_sensitive
-    - tier4_export_controlled
-    - tier5_regulated_personal
-    - tier6_classified
-  security.export_control: [none, EAR, ITAR]
-  workflow.state:
-    - raw
-    - processing
-    - qa
-    - analysis
-    - review
-    - embargo
-    - published
-    - archived
-  release_status: [draft, under_review, approved, published, deprecated]
-  object_type: [dataset, model, software, ai_agent, eval, framework, other]
-  dataset_type: [GD, IM, ND, SM, FP, I, MM, MD, AS, IP, IG]
-  access_policy.access_level: [open, restricted, controlled]
-  access_policy.authorization_required:
-    - none
-    - account
-    - user_agreement
-    - data_use_agreement
-    - sponsor_approval
-    - export_control_review
-    - irb_approval
-    - other
-  ai_usage.ai_ready: [true, false, conditional]
-  ai_usage.training_use_allowed: [true, false, conditional]
-  ai_usage.inference_use_allowed: [true, false, conditional]
-  ai_usage.evaluation_use_allowed: [true, false, conditional]
-  integrity.checksum_type: [sha256, sha512, md5, other]
-  dataset_readiness.level: [1, 2, 3]
-  dataset_readiness.confidence: [high, medium, low]
-  compliance.irb_approved: [true, false, not_applicable]
-  contact.type: [person, organization]
-  stewardship.maintainer.type: [person, organization]
-  dataset_readiness.evaluated_by.type: [person, organization]
-  security.sensitivity_level: [public, internal, confidential, restricted]
-  identification.primary_id.type: [doi, ark, handle, url, osti, local, other]
-  identification.supersedes.type: [doi, ark, handle, url, local, other]
-  identification.superseded_by.type: [doi, ark, handle, url, local, other]
-  identification.parent_collection.identifier.type: [doi, ark, handle, url, local, other]
-  datacard.id.type: [doi, ark, handle, url, local, other]
-  datacard.created_by[].role: [initial_creation, editor, reviewer, updater]
-  datacard.created_by[].creator.type: [person, organization, ai_model, software]
-  identification.additional_ids[].type: [doi, ark, handle, url, osti, sand, la-ur, local, other]
-  authors[].role: [creator, contributor, data_collector, curator, publisher, sponsor, other]
-  contributors[].role: [creator, contributor, data_collector, curator, publisher, sponsor, other]
-  reviews[].stage: [internal_qa, security, export_control, irb, partner, publication, other]
-  reviews[].status: [not_started, submitted, pending, approved, declined]
-  facilities[].role: [collection, processing, storage, access]
-  access.intended_repositories[].api.authentication: [none, api_key, oauth2, certificate, other]
-  provenance.source_data[].identifier.type: [doi, ark, handle, url, local, other]
-  provenance.source_data[].relationship: [is_derived_from, is_based_on, is_part_of, has_part, references, other]
-  related_resources.datasets[].identifier.type: [doi, ark, handle, url, local, other]
-  related_resources.datasets[].relationship: [is_derived_from, is_based_on, is_part_of, has_part, references, other]
-  related_resources.publications[].type: [doi, ark, arxiv, url, report, other]
-  related_resources.software[].identifier.type: [doi, ark, handle, url, local, other]
-  related_resources.software[].relationship: [is_derived_from, is_based_on, is_part_of, has_part, references, other, used_to_create, used_to_process, used_to_analyze, trained_on, evaluated_on]
-  related_resources.ai_models[].identifier.type: [doi, ark, handle, url, local, other]
-  related_resources.ai_models[].relationship: [is_derived_from, is_based_on, is_part_of, has_part, references, other, used_to_create, used_to_process, used_to_analyze, trained_on, evaluated_on]
-```
+| `workflow.state` | Typical `release_status` |
+|---|---|
+| `Raw` / `Processing` / `QA` / `Analysis` | `Draft` |
+| `Review` | `Under_Review` |
+| `Embargo` / `Published` | `Approved` or `Published` |
+| `Archived` | `Deprecated` or `Published` |
 
-Values are sourced from the Genesis v1.0 template comments and Appendix B of the Field Requirements doc. `license.spdx_id` is intentionally not enumerated — the SPDX registry has 600+ entries and is too large to maintain inline; the conditional rule requiring `license.name` when `spdx_id=other` is the only license enforcement needed.
+- Severity: `warn`
+- Paths checked (v2): `discoverability.workflow.state` ↔ `discoverability.release_status`
+- Legacy paths checked: `workflow.state` ↔ `release_status`
 
-## Formats
+## Why these aren't in the schema
 
-```yaml
-formats:
-  orcid: '^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$'
-  ror_url: '^https://ror\.org/[0-9a-z]{9}$'
-  doi: '^10\.\d+/.+'
-  iso8601_date: '^\d{4}-\d{2}-\d{2}$'
-  ark: '^ark:/\d+/.+'
-  handle: '^\d+/.+'
-```
+JSON Schema is binary pass/fail; it has no severity levels. The filename rule
+is a cross-field invariant that JSON Schema *could* express via `allOf/if/then`
+but would be awkward (and the schema is auto-generated upstream — we can't add to it).
+The alignment rule is intentionally a recommendation, not a constraint — datacards
+in transitional states (e.g., `archived` but recently `published`) are valid.
 
-These are pragmatic patterns since Genesis has not published an authoritative schema.
+## Adding new extras
 
-## Format fields
-
-```yaml
-format_fields:
-  orcid:
-    - datacard.created_by[].creator.person.orcid
-    - contact.person.orcid
-    - authors[].person.orcid
-    - contributors[].person.orcid
-    - stewardship.maintainer.person.orcid
-    - dataset_readiness.evaluated_by.person.orcid
-    - additional_contacts[].person.orcid
-    - reviews[].reviewed_by.person.orcid
-  ror_url:
-    - datacard.created_by[].creator.person.affiliation.ror_id
-    - datacard.created_by[].creator.organization.ror_id
-    - contact.person.affiliation.ror_id
-    - contact.organization.ror_id
-    - authors[].person.affiliation.ror_id
-    - authors[].organization.ror_id
-    - sponsor_organizations[].ror_id
-    - research_organizations[].ror_id
-    - facilities[].ror_id
-    - facilities[].location.ror_id
-    - stewardship.maintainer.person.affiliation.ror_id
-    - stewardship.maintainer.organization.ror_id
-    - additional_contacts[].person.affiliation.ror_id
-    - reviews[].institution.ror_id
-    - reviews[].reviewed_by.person.ror_id
-    - reviews[].reviewed_by.organization.ror_id
-    - dataset_readiness.evaluated_by.organization.ror_id
-  iso8601_date:
-    - datacard.created_date
-    - datacard.updated_date
-    - datacard.change_log[].date
-    - datacard.created_by[].date
-    - workflow.embargo_until
-    - dates.data_collection_start
-    - dates.data_collection_end
-    - dates.issued
-    - dates.modified
-    - security.last_reviewed_date
-    - security.declassification.review_date
-    - contact.valid_until
-    - reviews[].review_date
-    - dataset_readiness.evaluated_at
-    - datacard.created_by[].creator.ai_model.date_accessed
-    - access.intended_repositories[].date_deposited
-    - additional_contacts[].valid_until
-    - related_resources.ai_models[].date_accessed
-```
-
-Paths use `[]` to indicate iteration over each element of a list field.
-
-## Conditional required
-
-```yaml
-conditional_required:
-  - when: {workflow.state: embargo}
-    require: [workflow.embargo_until]
-  - when: {security.classification: CUI}
-    require: [security.cui_marking]
-  - when_not: {security.classification: U}
-    require:
-      - security.classification_reason
-      - security.declassification.review_date
-      - security.declassification.authority
-  - when_not: {security.export_control: none}
-    require: [security.export_control_id]
-  - when: {security.sensitivity_tier: tier5_regulated_personal}
-    require:
-      - security.pii.present
-  - when: {security.pii.present: true}
-    require: [security.pii.types]
-  - when: {security.pii.deidentification_applied: true}
-    require: [security.pii.deidentification_method]
-  - when: {license.spdx_id: other}
-    require: [license.name]
-  # NOTE: list-template (`[]`) support in conditional_required is limited —
-  # the rule triggers if ANY array element has spdx_id=other but the
-  # require path also resolves at the array level. Per-element enforcement
-  # is a known gap pending engine work.
-  - when: {"additional_licenses[].spdx_id": other}
-    require: ["additional_licenses[].name"]
-  - when: {datacard.profile: ai_ready}
-    require:
-      - categorization.task_category
-      - categorization.task_subcategory
-  - when: {release_status: deprecated}
-    severity: warn
-    require: [identification.superseded_by]
-  - when: {release_status: [approved, published]}
-    require:
-      - license.spdx_id
-      - authors
-      - citation.preferred_citation
-      - dates.issued
-```
-
-`when` triggers if all key/value pairs match; a list value in `when` (e.g., `{release_status: [approved, published]}`) acts as an "in" check. `when_not` triggers if the key value differs from the given value. `severity: warn` makes the rule non-blocking.
-
-## Workflow release alignment
-
-```yaml
-workflow_release_alignment:
-  raw: [draft]
-  processing: [draft]
-  qa: [draft]
-  analysis: [draft]
-  review: [under_review]
-  embargo: [approved, published]
-  published: [approved, published]
-  archived: [deprecated, published]
-```
-
-This is the recommended alignment; the validator emits a `warn`, not an `error`, on mismatch.
-
-## Features form rule
-
-`dataset_info.features` must use one form consistently:
-- For `core` and `extended` profiles: flat list of strings.
-- For `ai_ready` profile: list of objects with `name`, `type`, etc.
-Never mix in the same datacard.
-
-## Filename rule
-
-`datacard.filename` snake_case portion must equal `identification.name`
-lowercased, with non-alphanumeric runs replaced by `_`, prefixed with
-`genesis_datacard_`, suffixed with `.md`.
+When upstream adds rules that JSON Schema can express, no change is needed here.
+For new warn-level rules: add a check in `check_extras()` and document it above.
