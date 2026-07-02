@@ -98,6 +98,14 @@ Use the most recent employment's:
 
 ## ROR
 
+**Rate limit:** 2000 requests per 5-minute rolling window (~6.7 req/s), no API key required (https://ror.readme.io/docs/rest-api). Space lookups ~1/sec to stay well under this.
+
+**Deprecation status (network-verified 2026-07-02):** ROR API v1 was sunset the week of 2025-12-08. Any request with an explicit `/v1/` path now returns `HTTP 410 Gone`:
+```json
+{"errors":[{"status":"410","title":"API Version Deprecated","detail":"The v1 API has been deprecated. Please migrate to v2.","deprecated_at":"2025-12-09"}]}
+```
+Requests to the version-less path (`https://api.ror.org/organizations/{id}`) now default to the **v2** response shape (confirmed live). Use the version-less or explicit `/v2/` path below — never `/v1/`.
+
 ### Storage convention
 
 ROR identifiers are stored in **URL form** (`https://ror.org/XXXXXXX`) per the Genesis template. The format regex is in `references/genesis_datacard.schema.json`. When a user provides a bare 9-character ID (e.g., `03yrm5c26`), prepend `https://ror.org/` before storing.
@@ -107,14 +115,14 @@ ROR identifiers are stored in **URL form** (`https://ror.org/XXXXXXX`) per the G
 The ROR API expects the bare 9-character ID, not the URL form. Strip the `https://ror.org/` prefix when querying, but **store** the URL form in the datacard.
 
 ```
-GET https://api.ror.org/organizations/{bare_id}
+GET https://api.ror.org/v2/organizations/{bare_id}
 ```
 
-On success, extract:
-- `name` → the `name` field of whichever sub-block holds this ROR ID — e.g. `person.affiliation.name`, `organization.name`, `discoverability.sponsor_organizations[].name`, `discoverability.research_organizations[].name`, or `discoverability.facilities[].name`
-- `country.country_name` — useful context for the user
-- `types[]` — e.g., `["Education"]`, `["Government"]`
-- `links[0]` — organization homepage
+On success, extract (v2 schema — field names changed from v1):
+- `names[]` → find the entry whose `types[]` includes `"ror_display"` and use its `value` → the `name` field of whichever sub-block holds this ROR ID — e.g. `person.affiliation.name`, `organization.name`, `discoverability.sponsor_organizations[].name`, `discoverability.research_organizations[].name`, or `discoverability.facilities[].name`
+- `locations[0].geonames_details.country_name` — useful context for the user (v1 was `country.country_name`)
+- `types[]` — e.g., `["Education"]`, `["Government"]` (unchanged from v1)
+- `links[]` → find the entry with `type == "website"` and use its `value` (v1 was a bare array of URL strings; v2 wraps each link in `{type, value}`)
 
 **Present the resolved name to the user for confirmation** — ROR IDs can be mistyped and resolve to the wrong institution.
 
@@ -124,55 +132,57 @@ On success, extract:
 
 OSTI (Office of Scientific and Technical Information) provides a public REST API for DOE-funded research outputs including datasets, reports, and journal articles. Use it to pre-fill funding and provenance fields.
 
-### Lookup by Award Number
+**Rate limit:** No numeric rate limit is published in the OSTI API docs, FAQs, or api-help pages (checked 2026-07-02). The sibling `/api/v1/records` (reports/publications) endpoint does return an `x-rate-limit-remaining` response header, so some throttling exists even where undocumented — space requests ~1/sec to stay well under a conservative ~5 req/s ceiling.
+
+**Verified 2026-07-02:** `https://www.osti.gov/api/v1/datasets` returns **HTTP 404** — this endpoint does not exist. The correct dataset-search endpoint is the DOE Data Explorer API:
 
 ```
-GET https://www.osti.gov/api/v1/datasets?award_number={award_number}
+GET https://www.osti.gov/dataexplorer/api/v1/records?{params}
 Headers: Accept: application/json
 ```
 
-Or for reports/publications:
-```
-GET https://www.osti.gov/api/v1/records?award_number={award_number}
-```
+Documented query parameters (https://www.osti.gov/dataexplorer/api/v1/docs): `q`, `osti_id`, `fulltext`, `biblio`, `author`, `title`, `identifier`, `sponsor_org`, `research_org`, `contributing_org`, `source_id`, `publication_date_start`/`_end`, `entry_date_start`/`_end`, `language`, `country`, `site_ownership_code`, `sort`, `order`, `rows`, `page`.
 
-On success, extract from the first matching record:
-- `sponsor_org` → `discoverability.sponsor_organizations[].name`
-- `award_number` → `discoverability.sponsor_organizations[].award_number`
-- `contract_number` → `discoverability.sponsor_organizations[].award_number` (fallback)
-- `research_org` → `discoverability.research_organizations[].name`
-- `site_url` / `doi` → cross-check against `discoverability.identification.primary_id.value` and `discoverability.identification.additional_ids[]`
+**`award_number` and `site_url` are NOT functional filters** — verified empirically: passing either as a query param is silently ignored, and the endpoint returns its default (most-recent) result set instead of a 400/404 or a filtered match. Do not rely on them for lookup. `doi` filtering **does** work (verified with both a real DOI match and a fabricated DOI returning `[]`).
 
-### Lookup by DOI
+### Lookup by DOI (the only reliably filterable identifier)
 
 If the dataset already has a DOI:
 ```
-GET https://www.osti.gov/api/v1/datasets?doi={doi}
+GET https://www.osti.gov/dataexplorer/api/v1/records?doi={doi}
 ```
 
-On success, also extract:
+On success, extract from the first matching record:
+- `sponsor_orgs[]` → `discoverability.sponsor_organizations[].name` (array of strings — the response field is `sponsor_orgs`, not `sponsor_org`)
+- `doe_contract_number` → `discoverability.sponsor_organizations[].award_number` (there is no separate `award_number` field in the response; DOE contract numbers are the closest available match — OSTI sometimes appends a trailing `; `, trim it)
+- `research_orgs[]` → `discoverability.research_organizations[].name` (array of strings — the response field is `research_orgs`, not `research_org`)
+- `site_url` / `doi` → cross-check against `discoverability.identification.primary_id.value` and `discoverability.identification.additional_ids[]`
 - `title` — cross-check against `discoverability.identification.name`
-- `authors[].first_name` + `authors[].last_name` — cross-check or pre-fill `discoverability.authors[]`
+- `authors[]` — array of formatted strings, e.g. `"Flynn, James (ORCID:0000000288355898)"`, not `{first_name, last_name}` objects; parse the name before the parenthetical, and reformat the digits after `ORCID:` into `XXXX-XXXX-XXXX-XXXX` before storing
 - `description` — can seed `discoverability.dataset_description.dataset_summary` if none exists
 - `publication_date` → `interoperability.dates.issued` (requires `supports_interoperability=Yes`)
-- `keywords[]` → `discoverability.dataset_description.keywords`
+- `subjects[]` → `discoverability.dataset_description.keywords` (the response field is `subjects`, not `keywords`)
 
 Also consider whether the resolved DOI belongs in
 `reusability.citation.preferred_citation` (the BibTeX-style block: `doi`,
 `title`, `author`, `year`, `publisher`, `url`) if a preferred citation
 isn't already set.
 
-### Lookup by Site/Landing Page URL
+### Lookup by organization or title (when no DOI is available)
 
+Since there is no server-side award-number or site-url filter, search on a supported parameter instead and manually scan the results:
 ```
-GET https://www.osti.gov/api/v1/datasets?site_url={encoded_url}
+GET https://www.osti.gov/dataexplorer/api/v1/records?sponsor_org={org_name}&rows=20
+GET https://www.osti.gov/dataexplorer/api/v1/records?research_org={org_name}&rows=20
+GET https://www.osti.gov/dataexplorer/api/v1/records?title={title_text}&rows=20
 ```
+Page through results (`rows`/`page`) and match on `doe_contract_number` or `site_url` in the returned records.
 
 ### Usage Notes
 
 - OSTI records are DOE-funded work. If there is no match, the dataset may not be DOE-funded or may not yet be registered — inform the user rather than leaving the field blank silently.
-- Award numbers follow no single format: `DE-SC0012345`, `DE-AC02-06CH11357`, `89243021CSC000001` are all valid DOE patterns.
-- If multiple records match an award number, present the list to the user and ask them to confirm which applies.
+- Award numbers follow no single format: `DE-SC0012345`, `DE-AC02-06CH11357`, `89243021CSC000001` are all valid DOE patterns. Since `award_number` isn't a queryable filter, use these only for manual matching against `doe_contract_number`, not as a URL parameter.
+- If multiple records match, present the list to the user and ask them to confirm which applies.
 - The OSTI API returns JSON by default; no API key is required for read access.
 
 ---
