@@ -1,6 +1,6 @@
 # Body-fill guide
 
-The Genesis v1.0 datacard has two halves: the YAML frontmatter (machine-readable) and the markdown narrative body (human-readable). This skill fills both. The template's own instructions anticipate automated body-fill via the `<metadata_key: foo>` tags that point at YAML paths inside v2 capability containers (`discoverability.*`, `accessibility.*`, `interoperability.*`, `reusability.*`, `governed_use.*`, `ai_usability.*`).
+The Genesis v1.2 datacard has two halves: the YAML frontmatter (machine-readable) and the markdown narrative body (human-readable). This skill fills both. The template's own instructions anticipate automated body-fill via the `<metadata_key: foo>` tags that point at YAML paths inside v2 capability containers (`discoverability.*`, `accessibility.*`, `interoperability.*`, `reusability.*`, `governed_use.*`, `ai_usability.*`).
 
 This guide maps each markdown section to its source. For each section, the skill should:
 1. Replace any `[!TODO]`, `<REPLACE: ...>`, `<INSTRUCTIONS: ...>` markers
@@ -9,6 +9,16 @@ This guide maps each markdown section to its source. For each section, the skill
 4. **Leave no placeholder markup in the final output**
 
 When a YAML value is missing or `not_applicable`, write a short prose note (e.g., "Not provided — see structured metadata above") rather than leaving the placeholder.
+
+> **Known upstream inconsistency (v1.2):** the vendored template's markdown
+> narrative body still tags the AI/ML Considerations section with the
+> **old** `<metadata_key: ai_usability.ai_usage.training_use_allowed>` /
+> `inference_use_allowed` / `evaluation_use_allowed` names, even though the
+> YAML frontmatter uses the **new** `*_use_status` names
+> (`training_use_status`, `inference_use_status`, `evaluation_use_status`).
+> This was not fixed upstream in v1.2. When filling that section, treat the
+> old `metadata_key` names as synonyms for the new `*_use_status` fields
+> (translate old → new) rather than treating them as missing data.
 
 ---
 
@@ -45,7 +55,7 @@ Capability gating: sections labelled `[capability_required]` or `[capability_if_
 | `## Access and Permissions` | `governed_use.non_sensitivity_governance_metadata.export_control.export_control_status`, `governed_use.non_sensitivity_governance_metadata.privacy.*`, `governed_use.compliance.doe_data_management_plan`, `governed_use.compliance.irb_approved` | Compose a summary of export control, privacy, PII/PHI status, and compliance flags | `supports_governed_use=Yes` |
 | `## Access conditions` | `governed_use.non_sensitivity_governance_metadata.rights_release_records.ip_restriction_type`, `.agreement_required`, `.agreement_type`, `.public_release_status`, `.record_status` | Bulleted list of each condition | `supports_governed_use=Yes` |
 | `## Review Provenance / ### Release review process` | `governed_use.review_provenance_companion[]` | List each review entry with stage + status + date | `supports_governed_use=Yes` (if_applicable) |
-| `## AI / Machine Learning Considerations` | `ai_usability.ai_usage.training_use_allowed`, `ai_usability.ai_usage.inference_use_allowed`, `ai_usability.ai_usage.evaluation_use_allowed`, `ai_usability.ai_usage.restrictions`, `ai_usability.ai_usage.bias_risks`, `ai_usability.ai_usage.safety_considerations`, `ai_usability.ai_usage.human_review_required` | Prose paragraph synthesizing all AI usage flags. Note which uses are allowed/conditional/prohibited. | `supports_ai_usability=Yes` |
+| `## AI / Machine Learning Considerations` | `ai_usability.ai_usage.training_use_status`, `ai_usability.ai_usage.training_use_conditions`, `ai_usability.ai_usage.inference_use_status`, `ai_usability.ai_usage.inference_use_conditions`, `ai_usability.ai_usage.evaluation_use_status`, `ai_usability.ai_usage.evaluation_use_conditions`, `ai_usability.ai_usage.restrictions`, `ai_usability.ai_usage.bias_risks`, `ai_usability.ai_usage.safety_considerations`, `ai_usability.ai_usage.human_review_required` | Prose paragraph synthesizing all AI usage flags. Note which uses are allowed/conditional/prohibited; when a status is `Conditional`, include its `*_use_conditions` text. The template's `<metadata_key:>` tags for this section still use the old `*_use_allowed` names — see the known-inconsistency note above; map them to `*_use_status`. | `supports_ai_usability=Yes` |
 
 ---
 
@@ -55,7 +65,7 @@ These sections do NOT have a single `<metadata_key:>` tag pointing at one value.
 
 | Markdown section | YAML sources to combine | Notes |
 |---|---|---|
-| `### Domain and Purpose` | `discoverability.dataset_description.purpose`, `discoverability.dataset_description.science_domain`, `interoperability.domain_metadata.science_domain` | Compose 2-3 sentences covering research domain, science sub-domain, and purpose. If `purpose` is absent, derive from `dataset_summary`. |
+| `### Domain and Purpose` | `discoverability.dataset_description.purpose`, `discoverability.dataset_description.science_domain`, `interoperability.domain_metadata.science_domain` | Compose 2-3 sentences covering research domain, science sub-domain, and purpose. If `purpose` is absent, derive from `dataset_summary`. `science_domain` is a closed enum (`ScienceDomainEnum`, quoted strings with spaces) as of v1.2 — quote the value verbatim in prose rather than paraphrasing it. |
 | `### Resources used, including funding and facilities, to create the dataset` | `discoverability.sponsor_organizations[]`, `discoverability.sponsoring_doe_program_office`, `discoverability.sponsoring_doe_subprogram`, `discoverability.research_organizations[]`, `discoverability.facilities[]` | Compose: "Sponsored by `<sponsors>` (DOE program: `<program>`). Created at `<research_orgs>` using `<facilities>` (roles: `<facility roles>`)." Include ROR IDs, grant/contract numbers when present. |
 | `### Dataset generation, collection, and procedures` | `discoverability.dataset_description.collection_methodology`, `interoperability.provenance.processing_steps`, `interoperability.provenance.instrumentation`, `interoperability.provenance.simulation_details` | Multi-paragraph prose. One paragraph per populated sub-field. |
 | `## Sharing & Access` | `accessibility.access`, `accessibility.access_policy` | Compose: "Access level: `<access level>`. `<access_policy prose>`." Include contact information and legal rights statement if present. |

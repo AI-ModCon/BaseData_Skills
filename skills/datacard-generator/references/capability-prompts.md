@@ -38,7 +38,7 @@ prompts:
     - title: "Object & dataset typing"
       fields:
         - path: discoverability.dataset_description.tags.object_type
-          ask: "Object type: Dataset | Model | Software | AI_Agent | Eval | Framework | Other."
+          ask: "Object type: Dataset | Model | Software | AI_Agent | Infrastructure | Resource | Other."
         - path: discoverability.dataset_type
           ask: "OSTI dataset type code (GD/IM/ND/SM/FP/I/MM/MD/AS/IP/IG)."
         - path: discoverability.product_type
@@ -63,10 +63,18 @@ prompts:
           ask: "Email address for inquiries about this dataset."
         - path: discoverability.contact.person.affiliation.name
           ask: "Affiliation organization name."
+    - title: "Creator agent details"
+      fields:
+        - path: discoverability.datacard.created_by[].creator.person.role
+          ask: "CRediT role(s) for this creator, if a person or organization (multi-valued). See lookup-tables.md for the 16 CRediT values. Enter inside the person/organization sub-block, not at the creator entry level."
+        - path: discoverability.datacard.created_by[].creator.ai_model.relationship
+          ask: "If this creator is an ai_model: its relationship to the datacard creation process — used_to_create | used_to_process | used_to_analyze | recorded_by | trained_on | evaluated_on."
+        - path: discoverability.datacard.created_by[].creator.software.relationship
+          ask: "If this creator is software: its relationship to the datacard creation process — used_to_create | used_to_process | used_to_analyze | recorded_by | trained_on | evaluated_on."
     - title: "Categorization"
       fields:
         - path: discoverability.dataset_description.science_domain
-          ask: "High-level scientific domain (e.g., materials_science, biology, physics, computer_science)."
+          ask: "Scientific domain — select exactly one from the closed ScienceDomainEnum list (quoted strings with spaces, not snake_case): \"Biology and Medicine\" | \"Chemistry\" | \"Energy Storage, Conversion, and Utilization\" | \"Engineering\" | \"Environmental Sciences\" | \"Fission and Nuclear Technologies\" | \"Fossil Fuels\" | \"Geosciences\" | \"Materials\" | \"Mathematics and Computing\" | \"National Defense\" | \"Physics\" | \"Power Generation and Distribution\" | \"Renewable Energy\" | \"Other\". See lookup-tables.md for descriptions."
     - title: "Sensitivity (dataset)"
       fields:
         - path: discoverability.sensitivity.overall_sensitivity
@@ -78,7 +86,7 @@ prompts:
     - title: "Authorship"
       fields:
         - path: discoverability.authors
-          ask: "Primary authors with CRediT roles (multi-valued). See lookup-tables.md for the 16 CRediT values."
+          ask: "Primary authors with CRediT roles (multi-valued). See lookup-tables.md for the 16 CRediT values. `role[]` goes inside each author's `person` or `organization` sub-block (e.g., `authors[].person.role`), not on the author entry itself."
     - title: "Organizational context"
       fields:
         - path: discoverability.sponsor_organizations
@@ -114,7 +122,7 @@ prompts:
         - path: interoperability.data_structure.formats
           ask: "File formats present (e.g., CSV, HDF5, Parquet)."
         - path: interoperability.data_structure.modalities
-          ask: "Data modalities (e.g., tabular, image, time-series, text)."
+          ask: "Data modalities (e.g., tabular, image, time-series, text). [required when supports_interoperability=Yes]"
     - title: "Features"
       fields:
         - path: interoperability.data_structure.features
@@ -206,21 +214,27 @@ prompts:
     - title: "Compliance"
       fields:
         - path: governed_use.compliance.doe_data_management_plan
-          ask: "Is a DOE Data Management Plan on file? Yes | No | Unknown."
+          ask: "Is a DOE Data Management Plan on file? Yes | No | Unknown | not_applicable. [required]"
         - path: governed_use.compliance.osti_elink2_metadata_compliant
-          ask: "Is the metadata compliant with OSTI E-Link 2 API? Yes | No | Unknown."
+          ask: "Is the metadata compliant with OSTI E-Link 2 API? Yes | No | Unknown | not_applicable. [required]"
         - path: governed_use.compliance.irb_approved
-          ask: "IRB approval status: Yes | No | Unknown | not_applicable (use not_applicable for non-human-subject data)."
+          ask: "IRB approval status: Yes | No | Unknown | not_applicable (use not_applicable for non-human-subject data). [required]"
 
   ai_usability:
     - title: "AI/ML usage policy"
       fields:
-        - path: ai_usability.ai_usage.training_use_allowed
-          ask: "Training use allowed? Yes | No | Conditional."
-        - path: ai_usability.ai_usage.inference_use_allowed
-          ask: "Inference use allowed? Yes | No | Conditional."
-        - path: ai_usability.ai_usage.evaluation_use_allowed
-          ask: "Evaluation use allowed? Yes | No | Conditional."
+        - path: ai_usability.ai_usage.training_use_status
+          ask: "Training use status? Yes | No | Conditional. (renamed from training_use_allowed in v1.2) If Conditional, also fill training_use_conditions."
+        - path: ai_usability.ai_usage.training_use_conditions
+          ask: "Conditions under which training use is allowed (required only if training_use_status = Conditional)."
+        - path: ai_usability.ai_usage.inference_use_status
+          ask: "Inference use status? Yes | No | Conditional. (renamed from inference_use_allowed in v1.2) If Conditional, also fill inference_use_conditions."
+        - path: ai_usability.ai_usage.inference_use_conditions
+          ask: "Conditions under which inference use is allowed (required only if inference_use_status = Conditional)."
+        - path: ai_usability.ai_usage.evaluation_use_status
+          ask: "Evaluation use status? Yes | No | Conditional. (renamed from evaluation_use_allowed in v1.2) If Conditional, also fill evaluation_use_conditions."
+        - path: ai_usability.ai_usage.evaluation_use_conditions
+          ask: "Conditions under which evaluation use is allowed (required only if evaluation_use_status = Conditional)."
         - path: ai_usability.ai_usage.human_review_required
           ask: "Does AI use require human review? Yes | No."
     - title: "AI/ML risks"

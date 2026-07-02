@@ -1,18 +1,18 @@
 ---
 name: datacard-generator
-description: Generate Genesis Mission Datacard v1.0 documentation for scientific datasets by introspecting a directory and filling the structured template. Use when the user asks to create a datacard, dataset card, dataset documentation, dataset metadata, document a dataset, or prepare a dataset for sharing. Supports six capability dimensions (discoverability, accessibility, interoperability, reusability, governed_use, ai_usability) — pick which ones apply via `supports_*` flags. Also converts MODCON v1 datacards to Genesis v1.0.
+description: Generate Genesis Mission Datacard v1.2 documentation for scientific datasets by introspecting a directory and filling the structured template. Use when the user asks to create a datacard, dataset card, dataset documentation, dataset metadata, document a dataset, or prepare a dataset for sharing. Supports six capability dimensions (discoverability, accessibility, interoperability, reusability, governed_use, ai_usability) — pick which ones apply via `supports_*` flags. Also converts MODCON v1 datacards to Genesis v1.2.
 allowed-tools: Bash(*) Read WebSearch WebFetch
 ---
 
 # Generating Datacards
 
-Generate a Genesis Mission Datacard v1.0 by introspecting a dataset
+Generate a Genesis Mission Datacard v1.2 by introspecting a dataset
 directory and filling both the YAML frontmatter and the markdown narrative
 body of the canonical template, prompting the user for fields that
 introspection can't infer.
 
 The skill also has a one-shot **Convert** path for migrating an existing
-MODCON v1 datacard to Genesis v1.0.
+MODCON v1 datacard to Genesis v1.2.
 
 **Validation is driven by the upstream JSON Schema** (`references/genesis_datacard.schema.json`)
 applied via `scripts/validate_datacard.py`. The few warn-level rules JSON
@@ -42,7 +42,7 @@ Progress:
 Ask the user, in this order:
 
 - **Dataset path** — directory to document.
-- **Which capabilities does this dataset support?** Genesis v1.0 organizes fields into six capability containers. Ask Yes/No for each:
+- **Which capabilities does this dataset support?** Genesis v1.2 organizes fields into six capability containers. Ask Yes/No for each:
   - `supports_discoverability` — **always Yes** (schema enforces this). Identification, description, project, release status, contacts, authorship. Minimum core fields.
   - `supports_accessibility` — Yes if the dataset is meant to be accessed/shared. Adds access policy, endpoints, dataset scale.
   - `supports_interoperability` — Yes if the dataset uses standard formats, structured features, controlled vocabularies, or has documented provenance. Adds data_structure, dates, semantic_layer, provenance, related_resources.
@@ -76,9 +76,11 @@ using this decision table (paths use v2 capability-container structure):
 
 | Genesis field | Auto-fill if… | Otherwise |
 |---|---|---|
-| `discoverability.datacard.created_date` / `.updated_date` | always (today, ISO 8601) | — |
+| `discoverability.datacard.created_date` | always (today, ISO 8601) | — |
+| `discoverability.datacard.updated_date` | `if_applicable` — leave blank on initial creation; only set on subsequent edits (see Gotcha below) | — |
 | `discoverability.datacard.creation_method` | always → `"Hybrid"` (Title case in v2) | — |
-| `discoverability.datacard.change_log[0]` | always (`change_date`, `datacard_version: "1.0"`, "Initial creation" or "Converted from MODCON v1") | — |
+| `discoverability.datacard.template_version` | always → `"1.2"` (matches the vendored schema/template version) | — |
+| `discoverability.datacard.change_log[0]` | always (`change_date`, `datacard_version: "1.2"`, "Initial creation" or "Converted from MODCON v1") | — |
 | `discoverability.datacard.filename` | computed from `discoverability.identification.name` (see Filename rule below) | — |
 | `discoverability.datacard.language` | always → `en` (override if README is non-English) | — |
 | `discoverability.datacard.created_by[]` | always (AI model first if Hybrid; see Gotcha #4) | — |
@@ -94,6 +96,8 @@ using this decision table (paths use v2 capability-container structure):
 | `discoverability.authors[]` | from CITATION.cff (use **CRediT roles** — see `references/lookup-tables.md`) | prompt |
 | `reusability.citation.preferred_citation` | from CITATION.cff bibtex | prompt at `[pub]` |
 | `interoperability.provenance.was_generated_by` | always prompt (often forgotten) | — |
+| `discoverability.dataset_description.science_domain` | never auto-filled — closed `ScienceDomainEnum` (see `references/lookup-tables.md`) | prompt |
+| `ai_usability.ai_usage.training_use_status` / `.inference_use_status` / `.evaluation_use_status` | never auto-filled | prompt (`Yes \| No \| Conditional`); if `Conditional`, also prompt for the matching `*_use_conditions` free-text field |
 | `_repository.*` | **NEVER** — system-owned | — |
 
 For each `supports_X=Yes`, also write `supports_X: "Yes"` at the top level
@@ -108,7 +112,7 @@ Format validation is handled automatically by the validator.
 
 If the user wants to indicate dataset readiness, ask them to set a level
 (1, 2, or 3) as freetext in the datacard narrative. There is no dedicated
-`dataset_readiness` YAML field in Genesis v1.0 — readiness is expressed
+`dataset_readiness` YAML field in Genesis v1.2 — readiness is expressed
 through the combination of `supports_*` flags that are set to `"Yes"`.
 
 As a heuristic to guide the user:
@@ -128,17 +132,24 @@ required fields. Ask **3-5 at a time** following the batches in
 
 **Key vocabulary changes in v2** (full list in `references/lookup-tables.md`):
 
-- **CRediT taxonomy** for `authors[].role` and `contributors[].role` —
-  `Conceptualization`, `Data_Curation`, `Formal_Analysis`, `Funding_Acquisition`,
-  `Investigation`, `Methodology`, `Project_Administration`, `Resources`,
-  `Software`, `Supervision`, `Validation`, `Visualization`,
-  `Writing_Original_Draft`, `Writing_Review_Editing`, `Other`. **Multi-valued
+- **CRediT taxonomy** for `authors[].person.role` / `.organization.role` and
+  `contributors[].person.role` / `.organization.role` (role[] lives **inside**
+  the agent sub-block — see Gotcha below) —
+  `Conceptualization`, `Data_Curation`, `Data_Collection`, `Formal_Analysis`,
+  `Funding_Acquisition`, `Investigation`, `Methodology`, `Project_Administration`,
+  `Resources`, `Software`, `Supervision`, `Validation`, `Visualization`,
+  `Writing_Original_Draft`, `Writing_Review_Editing`, `Other` (16 values). **Multi-valued
   per author.** Replaces our previous `creator | contributor | data_collector | curator | publisher | sponsor | other` list.
 - **Title_Case for all enums** — `Published` not `published`, `Draft` not `draft`, `Hybrid` not `hybrid`, etc.
 - **Sensitivity** is no longer a tier ladder. Use `OverallSensitivityEnum`:
   `Public | Unclassified_Uncontrolled | CUI | UCNI | Classified | Legacy_Controlled | Mixed | Other_Controlled`.
-- **Yes/No/Conditional** strings (not Python booleans) for `ai_usage.*` and
-  governance Yes/No fields.
+- **Yes/No/Conditional** strings (not Python booleans) for
+  `ai_usability.ai_usage.training_use_status` / `.inference_use_status` /
+  `.evaluation_use_status` (renamed from `*_use_allowed`) and governance
+  Yes/No fields. If any `*_use_status = "Conditional"`, the matching
+  `*_use_conditions` free-text field is required.
+- **`science_domain` is a closed enum** (`ScienceDomainEnum`, 15 values) —
+  see `references/lookup-tables.md`. No longer free text.
 
 ### 7. Cross-check identifiers via live APIs
 
@@ -237,7 +248,7 @@ Ask if the user wants to revise any section before finishing.
 
 ---
 
-## Convert path (MODCON v1 → Genesis v1.0)
+## Convert path (MODCON v1 → Genesis v1.2)
 
 When the user asks to convert an existing MODCON v1 datacard:
 
@@ -246,8 +257,8 @@ When the user asks to convert an existing MODCON v1 datacard:
    - `missing_required` — Genesis fields the converter couldn't map. **Iterate over this list and prompt the user.**
    - `orphans` — v1 fields with no v2 equivalent.
 2. After prompting, rerun the converter or compose the final YAML inline.
-3. Set `discoverability.datacard.creation_method = "Hybrid"` and ensure
-   `change_log[0] = {change_date: today, datacard_version: "1.0", summary: "Converted from MODCON v1"}`.
+3. Set `discoverability.datacard.creation_method = "Hybrid"`, `template_version = "1.2"`, and ensure
+   `change_log[0] = {change_date: today, datacard_version: "1.2", summary: "Converted from MODCON v1"}`.
 4. **Fill the markdown body** using `references/body-fill-guide.md`.
 5. **Cross-check every identifier via live APIs** (step 7 of the Generate path).
 6. Run the validator (step 9 of the Generate path).
@@ -277,7 +288,7 @@ When the user asks to convert an existing MODCON v1 datacard:
    draft), then any `person` entry (reviewer).
 
 5. **CRediT roles** are multi-valued and replace the old role enum.
-   See `references/lookup-tables.md` for the 15 valid values.
+   See `references/lookup-tables.md` for the 16 valid values.
 
 6. **`primary_id.type`** should not be `doi` before a DOI is minted.
    Use `ark`, `local`, or `unregistered` for pre-publication states.
@@ -300,9 +311,50 @@ When the user asks to convert an existing MODCON v1 datacard:
 11. **Filename convention** is `genesis_datacard_<snake_case>.md` — not
     `modcon_datacard_*` (legacy v1 prefix).
 
-12. **No `dataset_readiness` YAML field.** Genesis v1.0 does not have a
+12. **No `dataset_readiness` YAML field.** Genesis v1.2 does not have a
     top-level `dataset_readiness` key. Readiness is expressed through
     which `supports_*` flags are set to `"Yes"` and in narrative prose.
+
+13. **`role[]` lives INSIDE the agent sub-block, not on the agent entry
+    itself.** `AgentClass` (used by `created_by`, `contact`,
+    `additional_contacts`, `authors`, `contributors`, `facilities`,
+    `related_resources.software|ai_models`) has no top-level `role` slot —
+    it is a tagged union of `person` / `organization` / `ai_model` /
+    `software`, and each of those four sub-classes carries its own `role[]`
+    (CRediT taxonomy). Do **not** write `role:` as a sibling of `person:`.
+    Correct shape:
+    ```yaml
+    - contribution_date: "2026-07-01"
+      creator:
+        person:
+          given_name: "Jane"
+          family_name: "Doe"
+          role: [Conceptualization, Data_Curation]   # inside person, not sibling
+    ```
+
+14. **`science_domain` is a closed, quoted-string-with-spaces enum.**
+    `discoverability.dataset_description.science_domain` and
+    `interoperability.domain_metadata.science_domain` both use
+    `ScienceDomainEnum` — 15 values, all quoted strings containing spaces
+    (e.g., `"Biology and Medicine"`, `"Energy Storage, Conversion, and
+    Utilization"`), unlike every other enum in the schema which uses
+    `Title_Case` / `snake_case` tokens. See `references/lookup-tables.md`
+    for the full list. Free text is no longer accepted.
+
+15. **`ai_model`/`software` agents require a `relationship` slot.** When
+    `discoverability.datacard.created_by[].creator.ai_model` or `.software`
+    is populated, `relationship` is required — one of `used_to_create |
+    used_to_process | used_to_analyze | recorded_by | trained_on |
+    evaluated_on` (`ExtendedRelationshipEnum`; there is no `other` value
+    despite some upstream docs implying one). The same enum applies to
+    `interoperability.related_resources.software[].relationship` and
+    `.ai_models[].relationship`.
+
+16. **`discoverability.datacard.updated_date` is now `if_applicable`, not
+    required.** Leave it blank on initial creation (a datacard that has
+    never been updated has nothing to report). Only set it when performing
+    a genuine update to an existing datacard, alongside a new `change_log`
+    entry (see Gotcha #8).
 
 ---
 

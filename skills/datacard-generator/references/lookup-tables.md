@@ -146,9 +146,9 @@ Common CUI markings (full registry: https://www.archives.gov/cui).
 | Enum name | Values | Used for |
 |---|---|---|
 | `YesNoEnum` | `Yes \| No` | Boolean fields with no uncertainty (e.g., `classified_status`, `cui_status`, `agreement_required`) |
-| `YesNoConditionalEnum` | `Yes \| No \| Conditional` | AI usage allowances (`training_use_allowed`, `inference_use_allowed`, `evaluation_use_allowed`) |
-| `YesNoUnknownEnum` | `Yes \| No \| Unknown` | Compliance fields (`doe_data_management_plan`, `osti_elink2_metadata_compliant`) |
-| `YesNoUnknownNotApplicableEnum` | `Yes \| No \| Unknown \| not_applicable` | IRB approval, UKMD status |
+| `YesNoConditionalEnum` | `Yes \| No \| Conditional` | AI usage status (`training_use_status`, `inference_use_status`, `evaluation_use_status` — renamed from `*_use_allowed` in v1.2) |
+| `YesNoUnknownEnum` | `Yes \| No \| Unknown` | (no longer used by `ComplianceClass` in v1.2 — see `YesNoUnknownNotApplicableEnum` below) |
+| `YesNoUnknownNotApplicableEnum` | `Yes \| No \| Unknown \| not_applicable` | IRB approval; UKMD status; and, as of v1.2, `doe_data_management_plan` and `osti_elink2_metadata_compliant` (widened from `YesNoUnknownEnum`, all three now required) |
 | `YesNoPendingUnknownEnum` | `Yes \| No \| Pending_Review \| Unknown` | Export control status, privacy/PII/PHI status |
 | `UKMDAStatusEnum` | `Yes \| No \| Unknown \| not_applicable` | UK MDA-specific handling |
 
@@ -201,11 +201,15 @@ Multi-valued. Used when access is need-to-know restricted.
 
 ### `ComplianceClass`
 
+All three fields are **required** as of v1.2 (`doe_data_management_plan` and
+`osti_elink2_metadata_compliant` were widened from `YesNoUnknownEnum` to
+`YesNoUnknownNotApplicableEnum` and are no longer optional).
+
 | Field | Enum | Values |
 |---|---|---|
 | `irb_approved` | `YesNoUnknownNotApplicableEnum` | `Yes \| No \| Unknown \| not_applicable` |
-| `doe_data_management_plan` | `YesNoUnknownEnum` | `Yes \| No \| Unknown` |
-| `osti_elink2_metadata_compliant` | `YesNoUnknownEnum` | `Yes \| No \| Unknown` |
+| `doe_data_management_plan` | `YesNoUnknownNotApplicableEnum` | `Yes \| No \| Unknown \| not_applicable` |
+| `osti_elink2_metadata_compliant` | `YesNoUnknownNotApplicableEnum` | `Yes \| No \| Unknown \| not_applicable` |
 
 For datasets without human subjects, use `not_applicable` for `irb_approved`, not `No`.
 
@@ -301,6 +305,33 @@ Extended from OSTI product types. Select the single best-fit.
 | `Computer_Related` | Computer-related materials |
 | `Model` | Computational or ML model |
 | `Agent` | AI agent |
+
+### `ScienceDomainEnum` (NEW in v1.2 — closed vocabulary, was free text)
+
+Applies to `discoverability.dataset_description.science_domain` and
+`interoperability.domain_metadata.science_domain`. Extends the OSTI Subject
+Areas list. **Unlike every other enum in this schema, these are quoted
+string literals containing spaces (and, in one case, a comma) — not
+`Title_Case` or `snake_case` tokens.** Copy the value verbatim, including
+punctuation.
+
+| Value | Meaning |
+|---|---|
+| `"Biology and Medicine"` | Biological and biomedical sciences |
+| `"Chemistry"` | Chemical sciences |
+| `"Energy Storage, Conversion, and Utilization"` | Batteries, fuel cells, energy conversion/storage systems |
+| `"Engineering"` | Engineering disciplines |
+| `"Environmental Sciences"` | Environmental and ecological sciences |
+| `"Fission and Nuclear Technologies"` | Nuclear fission and related nuclear technologies |
+| `"Fossil Fuels"` | Coal, oil, and natural gas |
+| `"Geosciences"` | Earth sciences, geology, geophysics |
+| `"Materials"` | Materials science |
+| `"Mathematics and Computing"` | Mathematics, computer science, computing |
+| `"National Defense"` | National defense-related science and technology |
+| `"Physics"` | Physical sciences |
+| `"Power Generation and Distribution"` | Electric power generation and grid distribution |
+| `"Renewable Energy"` | Solar, wind, and other renewable energy sources |
+| `"Other"` | Domain not covered by the above |
 
 ### OSTI dataset type codes (`DatasetTypeEnum`)
 
@@ -526,21 +557,35 @@ Used for `related_resources.software[].relationship` and `related_resources.ai_m
 | `trained_on` | The AI model was trained on this dataset |
 | `evaluated_on` | The AI model was evaluated on this dataset |
 
+Note: as of v1.2 this same enum is also **required** on
+`discoverability.datacard.created_by[].creator.ai_model.relationship` and
+`.software.relationship` (i.e., every AI-model or software agent, not just
+`related_resources` entries). There is no `other` value in this enum
+despite it being listed in some upstream template comments.
+
 ---
 
 ## AI/ML & quality
 
 Under `ai_usability.*` when `supports_ai_usability = Yes`.
 
-### AI usage allowances (`AIUsageClass`)
+### AI usage status (`AIUsageClass`) — renamed from `*_use_allowed` in v1.2
 
 All three use `YesNoConditionalEnum` — string values, not booleans (changed from v1).
+All three are **required**. When a status is `Conditional`, the matching
+`*_use_conditions` free-text field becomes required (schema rule).
 
 | Field | `Yes` | `No` | `Conditional` |
 |---|---|---|---|
-| `training_use_allowed` | Suitable for AI/ML training | Must not be used for training | Suitable under conditions in `restrictions` |
-| `inference_use_allowed` | Suitable for inference | Must not be used for inference | Suitable under conditions in `restrictions` |
-| `evaluation_use_allowed` | Suitable for model evaluation | Must not be used for evaluation | Suitable under conditions in `restrictions` |
+| `training_use_status` | Suitable for AI/ML training | Must not be used for training | Suitable under conditions in `training_use_conditions` |
+| `inference_use_status` | Suitable for inference | Must not be used for inference | Suitable under conditions in `inference_use_conditions` |
+| `evaluation_use_status` | Suitable for model evaluation | Must not be used for evaluation | Suitable under conditions in `evaluation_use_conditions` |
+
+| Companion field | Type | Required when |
+|---|---|---|
+| `training_use_conditions` | free text | `training_use_status = "Conditional"` |
+| `inference_use_conditions` | free text | `inference_use_status = "Conditional"` |
+| `evaluation_use_conditions` | free text | `evaluation_use_status = "Conditional"` |
 
 `human_review_required` uses `YesNoEnum`: `Yes | No`.
 
