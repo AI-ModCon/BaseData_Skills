@@ -1,5 +1,5 @@
 # ============================================================
-# GENESIS MISSION DATA CARD v1.0
+# GENESIS MISSION DATA CARD v1.2
 # ============================================================
 # This data card describes datasets ingested or created within
 # the Genesis Mission. It is designed for human and machine
@@ -124,19 +124,19 @@
 # ------------------------------------------------------------
 supports_discoverability: "Yes"  # [required] "Yes" is required as all data cards must support basic discovery and identification of the dataset. 
                                 # "Yes" is required for all data cards.
-supports_accessibility: "Yes|No"  # [required] Set to "Yes" if this data card includes the metadata to support accessibility of the dataset. Required for data cards describing datasets that are shared or published.
+supports_accessibility: ${"Yes|No"}  # [required] Set to "Yes" if this data card includes the metadata to support accessibility of the dataset. Required for data cards describing datasets that are shared or published.
                                 # Does not necessary indicate that the dataset itself is accessible, 
                                 # only that the data card includes all the metadata to support accessibility.
-supports_interoperability: "Yes|No"  # [required] Set to "Yes" if this data card includes the metadata to support interoperability of the dataset.
+supports_interoperability: ${"Yes|No"}  # [required] Set to "Yes" if this data card includes the metadata to support interoperability of the dataset.
                                 # Does not necessary indicate that the dataset itself is interoperable, 
                                 # only that the data card includes all the metadata to support interoperability.
-supports_reusability: "Yes|No"  # [required] Set to "Yes" if this data card includes the metadata to support reusability of the dataset.
+supports_reusability: ${"Yes|No"}  # [required] Set to "Yes" if this data card includes the metadata to support reusability of the dataset.
                                 # Does not necessary indicate that the dataset itself is reusable, 
                                 # only that the data card includes some metadata to support reusability.
-supports_governed_use: "Yes|No"  # [required] Set to "Yes" if this data card includes the metadata to support governed use of the dataset.
+supports_governed_use: ${"Yes|No"}  # [required] Set to "Yes" if this data card includes the metadata to support governed use of the dataset.
                                 # Does not necessary indicate that the dataset itself is cleared for governed use, 
                                 # only that the data card includes some metadata to support governed use.
-supports_ai_usability: "Yes|No"  # [required] Set to "Yes" if this data card includes the metadata to support AI usability of the dataset.
+supports_ai_usability: ${"Yes|No"}  # [required] Set to "Yes" if this data card includes the metadata to support AI usability of the dataset.
                                 # Does not necessary indicate that the dataset itself is AI-usable, 
                                 # only that the data card includes some metadata to support AI usability.
 
@@ -152,12 +152,13 @@ discoverability:
   # Describes this document itself — not the dataset.
   # ------------------------------------------------------------
   datacard:
-    template_version: "1.0"                     # [discoverability_required] DO NOT MODIFY — used by parsers to apply version-specific logic
+    template_version: "1.2"                     # [discoverability_required] DO NOT MODIFY — used by parsers to apply version-specific logic
     datacard_version: "1.0"                     # [discoverability_required] Version of this specific data card document.
                                                 # Increment when the data card is meaningfully updated.
                                                 # Use semantic versioning: MAJOR.MINOR.PATCH
                                                 # e.g., 1.0 → 1.1 for content updates; 1.x → 2.0 for structural changes
-    filename: "genesis_datacard_${SNAKE_CASE_DATASET_NAME}.md"  # [discoverability_required] Follow naming convention; align with identification.name
+    filename: "genesis_datacard_${SNAKE_CASE_DATASET_NAME}.md"  # [discoverability_required] Follow naming convention; align with identification.name;
+                                                # use genesis_datacard_other for datasets that are not part of a Genesis project or sub-project.
     language: en                                # [discoverability_required] ISO 639-1 language code for this data card's content
 
     id:                                         # [discoverability_if_applicable] Persistent identifier for this data card document itself,
@@ -180,12 +181,12 @@ discoverability:
                                                 # - Legacy_Controlled: Legacy controlled information; may have specific handling requirements based on legacy controls; access controls required.
                                                 # - Mixed: Mixed sensitivity; contains a combination of sensitive and non-sensitive information; handling requirements depend on the specific content; access controls required.
                                                 # - Other_Controlled: Other controlled information; may have specific handling requirements based on other controls; access controls required.
-      source_marking_string: __STRING__         # [discoverability_required] If this data card has a source marking, provide the marking string exactly as it appears on the data card.
-      source_marking_scheme: __SCHEME__         # [discoverability_required] If this data card has a source marking, provide the marking scheme used.
+      source_marking_string: ${STRING}         # [discoverability_required] If this data card has a source marking, provide the marking string exactly as it appears on the data card.
+      source_marking_scheme: ${SCHEME}         # [discoverability_required] If this data card has a source marking, provide the marking scheme used.
                                                 # use vocabulary: DOE_CUI | DOE_UCNI | EO13526_Classified | AEA_RD_FRD_TFNI | DOD_CUI | DHS_CUI | Legacy_OUO | Legacy_Site_Specific | Other_Agency | None
                                                 # if a Legacy_OUO is unresolved to a current standard marking, normalized_control_basis should be populated as "Legacy_Needs_Mapping" to indicate that the control basis is legacy and needs interpretation for governance purposes.
-      classified_status: __STATUS__             # [discoverability_required] "Yes" | "No" description: Indicates whether the asset is classified.
-      classification_level: __LEVEL__           # [discoverability_if_applicable] For classified information, top_secret | secret | confidential classification level
+      classified_status: ${STATUS}             # [discoverability_required] "Yes" | "No" description: Indicates whether the asset is classified.
+      classification_level: __LEVEL__           # [discoverability_if_applicable] For classified information, Top_Secret | Secret | Confidential classification level
       classification_category: []               # [discoverability_if_applicable] For classified information, list the classification category or categories, if applicable.
                                                 # use vocabulary: NSI | RD | FRD | TFNI | Other_Classified
       classified_control_markings: []           # [discoverability_if_applicable] For classified information, list the specific control markings that apply, if any.  
@@ -195,7 +196,7 @@ discoverability:
                                                 #       - "SIGMA 14"
                                                 #       - "REL TO USA, CAN, GBR"
                                                 #       - "ORCON"
-      cui_status: __STATUS__                    # [discoverability_required] "Yes" | "No" description: Indicates whether the asset is CUI.
+      cui_status: ${STATUS}                     # [discoverability_required] "Yes" | "No" description: Indicates whether the asset is CUI.
       cui_basic_categories: []                     # [discoverability_if_applicable, at least one basic or specified category is required if cui_status = "Yes"] For CUI, list the basic category or categories that apply, if any.         
                                                   # use DOE/ISOO-authoritative CUI Basic categories or subcategories.
                                                   # provide as a list of unique entries if multiple categories apply.
@@ -206,12 +207,12 @@ discoverability:
                                                   # provide as a list of unique entries if multiple controls apply.
                                                   # e.g., - "NOFORN"
                                                   #       - "DL ONLY"
-                                                  #       - " REL TO USA, GBR"
+                                                  #       - "REL TO USA, GBR"
                                                   #       - "DISPLAY ONLY USA, GBR"
                                                   #       - "RELIDO"
                                                   # If cui_limited_dissemination_controls contains NOFORN, REL TO..., DISPLAY ONLY...,
                                                   # or similar controls, foreign_national_access_status should be consistent with those controls.
-      ucni_status: __STATUS__                     # [discoverability_required] "Yes" | "No" description: Indicates whether the asset contains UCNI. UCNI is represented separately
+      ucni_status: ${STATUS}                     # [discoverability_required] "Yes" | "No" description: Indicates whether the asset contains UCNI. UCNI is represented separately
                                                   # and should not be treated as an ordinary CUI category value.
       uk_mda_status: __STATUS__                   # [discoverability_if_applicable] "Yes" | "No"| "Unknown" | "not_applicable"
                                                   # Indicates whether the asset is subject to UK Ministry of Defence Assessment (MDA) controls.
@@ -235,14 +236,14 @@ discoverability:
                                                   # - "Other_Controlled"
 
     created_date: "${YYYY-MM-DD}"               # [discoverability_required] ISO 8601 date this data card was first created
-    updated_date: "${YYYY-MM-DD}"               # [discoverability_required] ISO 8601 date of most recent update; revise on every change
+    updated_date: "__YYYY-MM-DD__"               # [discoverability_if_applicable] ISO 8601 date of most recent update; revise on every change
 
     change_log:                                 # [discoverability_required] Running history of meaningful changes to this data card.
                                                 # Add a new entry every time the data card is updated.
                                                 # Do not overwrite or delete prior entries.
-      - change_date: "${YYYY-MM-DD}"                   # [discoverability_required] ISO 8601 date of this change
+      - change_date: "${YYYY-MM-DD}"            # [discoverability_required] ISO 8601 date of this change
         datacard_version: "1.0"                 # [discoverability_required] Data card version after this change; pre-filled for initial creation
-        summary: "Initial creation"             # [discoverability_required] Brief description of what changed and why.
+        summary: ${SUMMARY}                     # [discoverability_required] Brief description of what changed and why.
                                                 # Update this text for all subsequent revisions.
                                                 # e.g., "Updated license to CC-BY-4.0"
                                                 # e.g., "Added checksum after file transfer to OSTI"
@@ -253,8 +254,7 @@ discoverability:
                                                 # that created or updated this data card. List in chronological order
                                                 # of contribution — e.g., if an AI model generated the initial draft
                                                 # and a person then edited it, list the AI model first.
-      - role: ${ROLE}                           # [discoverability_required] initial_creation | editor | reviewer | updater
-        contribution_date: "${YYYY-MM-DD}"      # [discoverability_required] ISO 8601 date of this specific contribution
+      - contribution_date: "${YYYY-MM-DD}"      # [discoverability_required] ISO 8601 date of this specific contribution
         description: __DESCRIPTION__            # [discoverability_if_applicable] Describe what this contributor did.
                                                 # e.g., "Automated generation of data card from dataset metadata"
                                                 # e.g., "Reviewed and corrected AI-generated content"
@@ -275,11 +275,15 @@ discoverability:
               name: ${ORG_NAME}
               ror_id: __ROR_ID__                 # [discoverability_if_applicable] Format: https://ror.org/XXXXXXX
                                                 # Look up at https://ror.org
+            role: 
+              - __ROLE__                           # [discoverability_if_applicable] list from roles extending the CRediT taxonomy: Conceptualization | Data_Curation | Formal_Analysis | Funding_Acquisition | Investigation | Methodology | Project_Administration | Resources | Software | Supervision | Validation | Visualization | Writing_Original_Draft | Writing_Review_Editing | Data_Collection | Other
 
           # TYPE: organization — use when a team or org created the data card without a named individual
           organization:
             name: ${ORG_NAME}
             ror_id: __ROR_ID__
+            role: 
+              - __ROLE__                           # [discoverability_if_applicable] list from roles extending the CRediT taxonomy: Conceptualization | Data_Curation | Formal_Analysis | Funding_Acquisition | Investigation | Methodology | Project_Administration | Resources | Software | Supervision | Validation | Visualization | Writing_Original_Draft | Writing_Review_Editing | Data_Collection | Other
 
           # TYPE: ai_model — use when an AI model generated or substantially contributed to this data card
           ai_model:
@@ -289,6 +293,9 @@ discoverability:
             identifier:
               type: __TYPE__                     # doi | ark | handle | url | local | other
               value: __VALUE__                   # Link to model card or documentation if available
+            role: 
+              - __ROLE__                           # [discoverability_if_applicable] list from roles extending the CRediT taxonomy: Conceptualization | Data_Curation | Formal_Analysis | Funding_Acquisition | Investigation | Methodology | Project_Administration | Resources | Software | Supervision | Validation | Visualization | Writing_Original_Draft | Writing_Review_Editing | Data_Collection | Other
+            relationship: __RELATIONSHIP__             # [discoverability_if_applicable, required for ai_model] select from: used_to_create | used_to_process | used_to_analyze | recorded_by | trained_on | evaluated_on; relationship of AI model to the  data card creation process. e.g., "used_to_create" if the AI model generated the initial draft of the data card, "used_to_analyze" if the AI model analyzed dataset metadata to populate the data card, "evaluated_on" if the AI model was used to evaluate or validate the data card content, or "other" if none of the predefined relationships apply.
 
           # TYPE: software — use when an automated pipeline or script generated this data card
           software:
@@ -297,12 +304,15 @@ discoverability:
             identifier:
               type: __TYPE__                     # doi | ark | handle | url | local | other
               value: __VALUE__
+            role: 
+              - __ROLE__                           # [discoverability_if_applicable] list from roles extending the CRediT taxonomy: Conceptualization | Data_Curation | Formal_Analysis | Funding_Acquisition | Investigation | Methodology | Project_Administration | Resources | Software | Supervision | Validation | Visualization | Writing_Original_Draft | Writing_Review_Editing | Data_Collection | Other
+            relationship: __RELATIONSHIP__             # [discoverability_if_applicable, required for software] select from: used_to_create | used_to_process | used_to_analyze | recorded_by | trained_on | evaluated_on; relationship of software to the  data card creation process. e.g., "used_to_create" if the software generated the initial draft of the data card, "used_to_analyze" if the software analyzed dataset metadata to populate the data card, "evaluated_on" if the software was used to evaluate or validate the data card content, or "other" if none of the predefined relationships apply.
   # --- Identification ---------------------------------------------
   identification:                               # [discoverability_required] Key metadata fields that uniquely identify this dataset.
     name: "${DATASET_NAME}"                     # [discoverability_required] Single human-readable name for this dataset.
                                                 # Use the same name in the data card filename.
                                                 # If this data card covers a collection, provide the collection name.
-    project: "${PROJECT_NAME}"                  # [discoverability_required] Genesis project or sub-project this dataset belongs to.
+    project: "${PROJECT_NAME}"                  # [discoverability_required] If the dataset is part of a Genesis project or sub-project, specify it here; otherwise, use "not_applicable".
                                                 # e.g., genesis | genesis-fusion | genesis-lightsource
     version: "1.0"                              # [discoverability_required] Dataset version using semantic versioning: MAJOR.MINOR.PATCH
                                                 # Increment MAJOR for breaking changes, MINOR for additions,
@@ -314,7 +324,7 @@ discoverability:
                                                 # Aligns with dcterms:identifier and is the main identifier used in citations and references.
                                                 # Use ark or local if a DOI has not yet been assigned.
       type: ${TYPE}                             # doi | ark | handle | url | osti | local | other | unregistered
-      value: ${VALUE}
+      value: __VALUE__
       # ARK format:  ark:/NAAN/shoulder+assigned_name  e.g., ark:/12345/b2345679k
       # Resolve via: https://n2t.net/ark:/NAAN/...
       # Convention:  use ark for pre-published states; mint a doi upon publication
@@ -343,10 +353,10 @@ discoverability:
         type: __TYPE__                          # doi | ark | handle | url | local | other
         value: __VALUE__
   # --- Description ------------------------------------------------
-  dataset_description:                        # [discoverability_required] Descriptive metadata about the dataset to support discovery, understanding, and reuse.
-    science_domain: "${DOMAIN}"               # [discoverability_if_applicable] High-level scientific domain or discipline.
-                                              # e.g., materials_science | biology | physics | chemistry
-                                              #        climate | fusion | lightsource | computer_science | other
+  dataset_description:                        # [discoverability_required] 
+    science_domain: __DOMAIN__                # [discoverability_if_applicable] Extends the the list of OSTI Subject Areas with an Other category for datasets that do not fit into the OSTI list.
+                                              # Controlled vocabulary:
+                                              # "Biology and Medicine" | "Chemistry" | "Energy Storage, Conversion, and Utilization" | "Engineering" | "Environmental Sciences" | "Fission and Nuclear Technologies" | "Fossil Fuels" | "Geosciences" | "Materials" | "Mathematics and Computing" | "National Defense" | "Physics" | "Power Generation and Distribution" | "Renewable Energy" | "Other"
     dataset_summary: "${SUMMARY}"             # [discoverability_required] 1–3 sentence plain-language description of the dataset.
                                               # Write for a broad scientific audience unfamiliar with your project.
     purpose: __PURPOSE__                      # [discoverability_if_applicable] Why was this dataset created? What gap does it fill?
@@ -358,9 +368,9 @@ discoverability:
     limitations: __LIMITATIONS__              # [discoverability_if_applicable] Known limitations, gaps, or caveats users should
                                               # be aware of before using this dataset.
     tags:                                     # [discoverability_if_applicable] Structured tags for catalog filtering and discovery.
-      project: ${PROJECT}                     # e.g., genesis
+      project: __PROJECT__                     # e.g., genesis | SCIDAC 
       science: __SCIENCE__                    # e.g., lightsource | fusion | materials | biology
-      object_type: __TYPE__                   # select one of: Dataset | Model | Software | AI_Agent | Eval | Framework | Software
+      object_type: __TYPE__                   # select one of: Dataset | Model | Software | AI_Agent | Infrastructure | Resource | Other
     task_category: []                         # [discoverability_if_applicable, at least one value required if task_subcategory is present] Primary ML task category or categories for this dataset.
                                               # Populate for AI-ready data; helps ML practitioners find
                                               # relevant datasets in the catalog.
@@ -381,7 +391,7 @@ discoverability:
                                               # Technical_Report | Paper_or_Proceedings | Journal_Article | Software_Manual | Data | Collection | Computer_Related | Model | Agent
                                               # Data is expected here for a data card describing a dataset, but select the best fit if this data card describes a different type of product.
 
-  dataset_type: ${TYPE}                         # [discoverability_if_applicable] OSTI DOE Data Explorer type code. Select the single best-fit:
+  dataset_type: __TYPE__                        # [discoverability_if_applicable] OSTI DOE Data Explorer type code. Select the single best-fit:
                                                 #   GD  Genome/Genetic Data     — DNA/RNA sequences, genomic annotations
                                                 #   IM  Image                   — photographs, scans, microscopy, visualizations
                                                 #   ND  Numeric Data            — measurements, time series, tabular, sensor readings
@@ -406,7 +416,7 @@ discoverability:
 
   dataset_publisher:                            # [discoverability_if_applicable, required when release_status = Approved | Published] 
                                                 # Entity responsible for making this dataset available. Often the same as the primary research organization, but may differ if a separate publisher is involved.
-    name: ${ORG_NAME}                           # [discoverability_if_applicable] Organization or individual that published this dataset.
+    name: __ORG_NAME__                           # [discoverability_if_applicable] Organization or individual that published this dataset.
     ror_id: __ROR_ID__                          # [discoverability_if_applicable] Format: https://ror.org/XXXXXXX
 
   # --- Dataset Contacts ---------------------------------------------------
@@ -417,9 +427,9 @@ discoverability:
       family_name: ${FAMILY_NAME}
       orcid: __ORCID__                         # [discoverability_if_applicable] Format: https://orcid.org/0000-0000-0000-0000
                                                # Required where DOE employee/contractor author policy applies, if locally applicable
-      email: ${EMAIL}
+      email: __EMAIL__
       affiliation:
-        name: ${ORG_NAME}
+        name: __ORG_NAME__
         ror_id: __ROR_ID__                     # [discoverability_if_applicable] Format: https://ror.org/XXXXXXX
     valid_until: __YYYY-MM-DD__               # [discoverability_if_applicable] Date after which this contact may no longer be valid.
                                               # Use for project-bound contacts (students, postdocs, term staff).
@@ -449,17 +459,19 @@ discoverability:
       person:
         given_name: ${GIVEN_NAME}
         family_name: ${FAMILY_NAME}
-        orcid: __ORCID__                        # [if_applicable] Strongly recommended — enables disambiguation and credit tracking
+        orcid: __ORCID__                        # [discoverability_if_applicable] Strongly recommended — enables disambiguation and credit tracking
                                                 # Required where DOE employee/contractor author policy applies, if locally applicable
-        email: __EMAIL__                        # [if_applicable]
+        email: __EMAIL__                        # [discoverability_if_applicable]
         affiliation:
           name: ${ORG_NAME}
-          ror_id: __ROR_ID__                    # [if_applicable]
-        role: ${ROLE}                           # creator | contributor | data_collector | curator | publisher | sponsor | other
+          ror_id: __ROR_ID__                    # [discoverability_if_applicable]
+        role: 
+              - __ROLE__                           # [discoverability_if_applicable] list from roles extending the CRediT taxonomy: Conceptualization | Data_Curation | Formal_Analysis | Funding_Acquisition | Investigation | Methodology | Project_Administration | Resources | Software | Supervision | Validation | Visualization | Writing_Original_Draft | Writing_Review_Editing | Data_Collection | Other
       organization:
         name: __ORG_NAME__
         ror_id: __ROR_ID__
-        role: ${ROLE}                           # creator | contributor | data_collector | curator | publisher | sponsor | other
+        role: 
+              - __ROLE__                           # [discoverability_if_applicable] list from roles extending the CRediT taxonomy: Conceptualization | Data_Curation | Formal_Analysis | Funding_Acquisition | Investigation | Methodology | Project_Administration | Resources | Software | Supervision | Validation | Visualization | Writing_Original_Draft | Writing_Review_Editing | Data_Collection | Other
 
   contributors: []                              # [discoverability_if_applicable] Supporting contributors who are not primary authors.
                                                 # e.g., sample preparers, annotators, reviewers, submitters.
@@ -497,7 +509,8 @@ discoverability:
                                               # used to collect, process, or store the dataset.
     # - name: __FACILITY_NAME__               # e.g., Spallation Neutron Source | Summit | Frontier
     #   ror_id: __ROR_ID__
-    #   role: __ROLE__                        # collection | processing | storage | access
+    #   role: 
+    #          - __ROLE__                           # [discoverability_if_applicable] list from roles extending the CRediT taxonomy: Conceptualization | Data_Curation | Formal_Analysis | Funding_Acquisition | Investigation | Methodology | Project_Administration | Resources | Software | Supervision | Validation | Visualization | Writing_Original_Draft | Writing_Review_Editing | Data_Collection | Other
     #   location:                             # [discoverability_if_applicable] Point location for facility-based experimental data.
     #     description: __DESC__               # e.g., "SNS Beamline 1B, Oak Ridge National Laboratory, TN, USA"
     #     ror_id: __ROR_ID__                  # ROR ID of the facility; cross-reference with name above
@@ -522,10 +535,10 @@ discoverability:
                                                 # - Legacy_Controlled: Legacy controlled information; may have specific handling requirements based on legacy controls; access controls required.
                                                 # - Mixed: Mixed sensitivity; contains a combination of sensitive and non-sensitive information; handling requirements depend on the specific content; access controls required.
                                                 # - Other_Controlled: Other controlled information; may have specific handling requirements based on other controls; access controls required.
-    source_marking_string: __STRING__           # [discoverability_required] If this dataset has a source marking, provide the marking string exactly as it appears on the data card.
-    source_marking_scheme: __SCHEME__           # [discoverability_required] If this dataset has a source marking, provide the marking scheme used.
+    source_marking_string: ${STRING}           # [discoverability_required] If this dataset has a source marking, provide the marking string exactly as it appears on the data card.
+    source_marking_scheme: ${SCHEME}           # [discoverability_required] If this dataset has a source marking, provide the marking scheme used.
                                                 # use vocabulary: DOE_CUI | DOE_UCNI | EO13526_Classified | AEA_RD_FRD_TFNI | DOD_CUI | DHS_CUI | Legacy_OUO | Legacy_Site_Specific | Other_Agency | None
-    classified_status: __STATUS__               # [discoverability_required] "Yes" | "No" description: Indicates whether the asset is classified.
+    classified_status: ${STATUS}               # [discoverability_required] "Yes" | "No" description: Indicates whether the asset is classified.
     classification_level: __LEVEL__             # [discoverability_if_applicable] For classified information, Top_Secret | Secret | Confidential classification level
     classification_category: []                 # [discoverability_if_applicable] For classified information, list the classification category or categories, if applicable.
                                                 # use vocabulary: NSI | RD | FRD | TFNI | Other_Classified
@@ -536,7 +549,7 @@ discoverability:
                                                 #       - "SIGMA 14"
                                                 #       - "REL TO USA, CAN, GBR"
                                                 #       - "ORCON"
-    cui_status: __STATUS__                      # [discoverability_required] "Yes" | "No" description: Indicates whether the asset is CUI.
+    cui_status: ${STATUS}                       # [discoverability_required] "Yes" | "No" description: Indicates whether the asset is CUI.
     cui_basic_categories: []                    # [discoverability_if_applicable, at least one basic or specified category is required if cui_status = "Yes"] For CUI, list the basic category or categories that apply, if any.         
                                                 # use DOE/ISOO-authoritative CUI Basic categories or subcategories.
                                                 # provide as a list of unique entries if multiple categories apply.
@@ -552,7 +565,7 @@ discoverability:
                                                 #       - "RELIDO"
                                                 # If cui_limited_dissemination_controls contains NOFORN, REL TO..., DISPLAY ONLY...,
                                                 # or similar controls, foreign_national_access_status should be consistent with those controls.
-    ucni_status: __STATUS__                     # [discoverability_required] "Yes" | "No" description: Indicates whether the asset contains UCNI. UCNI is represented separately
+    ucni_status: ${STATUS}                     # [discoverability_required] "Yes" | "No" description: Indicates whether the asset contains UCNI. UCNI is represented separately
                                                 # and should not be treated as an ordinary CUI category value.
     uk_mda_status: __STATUS__                   # [discoverability_if_applicable] "Yes" | "No" | "Unknown" | not_applicable
                                                 # Indicates whether the asset is subject to UK Ministry of Defence Assessment (MDA) controls.
@@ -624,7 +637,7 @@ accessibility:                              # [accessibility_required]
     access_level: ${LEVEL}                      # [accessibility_required] Open | Restricted | Controlled
     access_restrictions: __RESTRICTIONS__       # [accessibility_if_applicable] Freetext description of access restrictions.
                                                 # e.g., "Requires signed DUA" | "None - publicly accessible"
-    authorization_required: ${AUTH}             # [accessibility_if_applicable] Required if access_level is not open. 
+    authorization_required: __AUTH__             # [accessibility_if_applicable] Required if access_level is not open. 
                                                 # List of authorization needed to access this dataset:                
                                                 #   Account               — registered account required
                                                 #   User_Agreement        — user agreement or terms of service
@@ -653,7 +666,7 @@ accessibility:                              # [accessibility_required]
   # access protocols) will be populated by the managing repository
   # or catalog system at ingest — see the REPOSITORY-MANAGED block.
   access:                                     # [accessibility_required]
-    current_location: __PATH_OR_URL__         # [accessibility_required] Where the data physically resides right now.
+    current_location: ${PATH_OR_URL}         # [accessibility_required] Where the data physically resides right now.
                                               # Use for in-workflow data not yet deposited in a repository,
                                               # or for any dataset with a known internal or external storage path.
                                               # e.g., /mnt/ecs/scientific-data/project/dataset/
@@ -666,11 +679,14 @@ accessibility:                              # [accessibility_required]
                                               # this dataset in. The managing repository or catalog system will
                                               # resolve and populate repository-assigned fields at ingest
                                               # (see REPOSITORY-MANAGED block). Repositories may be institutional,
-                                              # project-owned, community, or national (e.g., OSTI, Zenodo,
+                                              # project-owned, community, or national (e.g., Zenodo,
                                               # institutional data repository, project data store).
-      - name: __NAME__                        # [accessibility_if_applicable] e.g., "OSTI Data Explorer" | "Zenodo" | "Globus" | "internal"
+      - name: __NAME__                        # [accessibility_if_applicable] e.g., "Zenodo" | "Globus" | "internal"
         access_level: __LEVEL__               # [accessibility_if_applicable] Intended access level: Open | Restricted | Controlled
                                               # The same dataset may have different access levels per repository.
+                                              # Open: anyone can discovery and access without special permissions.
+                                              # Restricted: data may be discoverable, but users must satisfy basic access requirements (authentication, institutional affiliation, registration, agreement to terms, etc.). Approval is generally automatic or administrative.
+                                              # Controlled: Access is granted only after review and explicit authorization based on the requester, intended use, legal requirements, or security considerations. Requests may be denied.
         is_primary: "__Yes|No__"              # [accessibility_if_applicable] "Yes" | "No" — only one entry should be marked "Yes"
         date_deposited: __YYYY-MM-DD__        # [accessibility_if_applicable]
         data_services:                        # [accessibility_if_applicable] Populate if Data Service / API endpoints exists for this dataset
@@ -760,7 +776,7 @@ interoperability:                             # [interoperability_required]
   # Describes how this dataset was created, what it was derived
   # from, and what processing was applied.
   provenance:
-    was_generated_by: __DESCRIPTION__         # [interoperability_required] High-level description of the generating process.
+    was_generated_by: ${DESCRIPTION}         # [interoperability_required] High-level description of the generating process.
                                               # Even a one-line answer dramatically improves catalog value.
                                               # e.g., "Neutron scattering experiment at SNS Beamline 1B"
                                               # e.g., "Monte Carlo simulation using MCNP 6.2"
@@ -771,7 +787,7 @@ interoperability:                             # [interoperability_required]
           type: __TYPE__                      # doi | ark | handle | url | local | other
           value: __VALUE__
         relationship: __REL__                 # is_derived_from | is_based_on | is_part_of | has_part | references | other
-    processing_steps: __DESCRIPTION__         # [interoperability_required] Key processing, cleaning, calibration, or
+    processing_steps: ${DESCRIPTION}         # [interoperability_required] Key processing, cleaning, calibration, or
                                               # transformation steps applied to produce this dataset.
     instrumentation: __DESCRIPTION__          # [interoperability_if_applicable] Instruments, sensors, detectors, or equipment used.
                                               # Include make, model, and version where relevant.
@@ -833,6 +849,8 @@ interoperability:                             # [interoperability_required]
     #   identifier:
     #     type: __TYPE__                      # doi | ark | handle | url | local | other
     #     value: __VALUE__
+    #   role: 
+    #     - __ROLE__                           # [interoperability_if_applicable] list from roles extending the CRediT taxonomy: Conceptualization | Data_Curation | Formal_Analysis | Funding_Acquisition | Investigation | Methodology | Project_Administration | Resources | Software | Supervision | Validation | Visualization | Writing_Original_Draft | Writing_Review_Editing | Data_Collection | Other
     #   relationship: __REL__                 # see vocabulary above
 
     ai_models: []
@@ -842,6 +860,8 @@ interoperability:                             # [interoperability_required]
     #   identifier:
     #     type: __TYPE__                      # doi | ark | handle | url | local | other
     #     value: __VALUE__
+    #   role: 
+    #     - __ROLE__                           # [interoperability_if_applicable] list from roles extending the CRediT taxonomy: Conceptualization | Data_Curation | Formal_Analysis | Funding_Acquisition | Investigation | Methodology | Project_Administration | Resources | Software | Supervision | Validation | Visualization | Writing_Original_Draft | Writing_Review_Editing | Data_Collection | Other
     #   relationship: __REL__                 # see vocabulary above
 
   # --- Domain Metadata ------------------------------------------
@@ -852,7 +872,8 @@ interoperability:                             # [interoperability_required]
   domain_metadata:                        # [interoperability_if_applicable] e.g., "Accelerator Operations Metadata" | "Climate Data Variables"
     - name: __NAME__
       description: __DESCRIPTION__        # [interoperability_if_applicable] Free-text description of the domain-specific metadata, its purpose, and any important details.
-      science_domain: __DOMAIN__          # [interoperability_if_applicable] e.g., accelerator_operations | climate | ...
+      science_domain: __DOMAIN__          # [interoperability_if_applicable] 
+                                          # Extends OSTI's supported Subject Areas: "Biology and Medicine" | "Chemistry" | "Energy Storage, Conversion, and Utilization" | "Engineering" | "Environmental Sciences" | "Fission and Nuclear Technologies" | "Fossil Fuels" | "Geosciences" | "Materials" | "Mathematics and Computing" | "National Defense" | "Physics" | "Power Generation and Distribution" | "Renewable Energy" | "Other"
       schema_reference:                   # [interoperability_if_applicable]
         type: __TYPE__       # doi | url | ark | handle | local | other
         value: __VALUE__
@@ -927,10 +948,10 @@ reusability:                              # [reusability_required] Information a
   # --- Data Quality -----------------------------------------------
   # [reusability_required] Be specific — vague entries reduce trust and reuse.
   data_quality:                              # [reusability_required]
-    completeness: __DESCRIPTION__            # [reusability_required] e.g., "All detector channels present; 2% of timesteps
+    completeness: ${DESCRIPTION}            # [reusability_required] e.g., "All detector channels present; 2% of timesteps
                                              # missing due to instrument downtime on 2023-04-12"
-    known_issues: __DESCRIPTION__            # [reusability_required] e.g., "Sensor drift observed after 2023-06-01T12:00:00Z"
-    validation_methods: __DESC__             # [reusability_required] e.g., "Cross-validated against NIST SRM 640f"
+    known_issues: ${DESCRIPTION}            # [reusability_required] e.g., "Sensor drift observed after 2023-06-01T12:00:00Z"
+    validation_methods: ${DESC}             # [reusability_required] e.g., "Cross-validated against NIST SRM 640f"
     noise_characteristics: __DESC__          # [reusability_if_applicable]
     uncertainty_notes: __NOTES__             # [reusability_if_applicable] e.g., "Measurement uncertainty ±0.5% (k=2) per ISO/IEC Guide 98-3"
     missing_data_codes: []                   # [reusability_if_applicable]
@@ -943,16 +964,16 @@ reusability:                              # [reusability_required] Information a
   citation:                           # [reusability_if_applicable]
     report_number: __NUMBER__         # [reusability_if_applicable] e.g., SAND2024-XXXXX | LAUR-XX-XXXXX | ORNL/TM-2024/XXXXX
     preferred_citation:               # [reusability_if_applicable]
-      author: ${AUTHOR}               # [reusability_if_applicable, required if preferred_citation is included] e.g., "Smith, John A.; Doe, Jane B."
-      title: ${DATASET_NAME}          # [reusability_if_applicable, required if preferred_citation is included] e.g., "Neutron Scattering Data from SNS Beamline 1B, April 2023"
-      year: ${YEAR}                   # [reusability_if_applicable, required if preferred_citation is included] e.g., 2024
-      publisher: ${PUBLISHER}         # [reusability_if_applicable, either preferred_citation or howpublished is required] e.g., "Oak Ridge National Laboratory" | "DOE NNSA" | "University of X"
+      author: __AUTHOR__               # [reusability_if_applicable, required if preferred_citation is included] e.g., "Smith, John A.; Doe, Jane B."
+      title: __DATASET_NAME__          # [reusability_if_applicable, required if preferred_citation is included] e.g., "Neutron Scattering Data from SNS Beamline 1B, April 2023"
+      year: __YEAR__                   # [reusability_if_applicable, required if preferred_citation is included] e.g., 2024
+      publisher: __PUBLISHER__         # [reusability_if_applicable, either preferred_citation or howpublished is required] e.g., "Oak Ridge National Laboratory" | "DOE NNSA" | "University of X"
       howpublished: __HOWPUBLISHED__  # [reusability_if_applicable, either preferred_citation or howpublished is required] e.g., "(Version v1) [Data set]. Zenodo" | "Available at https://doi.org/10.1234/zenodo.1234567"
-      doi: ${DOI}                     # [reusability_if_applicable, either doi or url is required] e.g., "10.1234/zenodo.1234567"
-      url: ${URL}                     # [reusability_if_applicable, either doi or url is required] e.g., "https://doi.org/10.1234/zenodo.1234567" 
-      eprinttype: ${EPRINT_TYPE}      # [reusability_if_applicable] e.g., arxiv | biorxiv | report_number | other
-      eprint: ${EPRINT}               # [reusability_if_applicable] e.g., "1234.56789" | "SAND2024-XXXXX
-      note: ${NOTE}                   # [reusability_if_applicable] e.g., "Available at \url{ark:/12345/abcde}""
+      doi: __DOI__                     # [reusability_if_applicable, either doi or url is required] e.g., "10.1234/zenodo.1234567"
+      url: __URL__                     # [reusability_if_applicable, either doi or url is required] e.g., "https://doi.org/10.1234/zenodo.1234567" 
+      eprinttype: __EPRINT_TYPE__      # [reusability_if_applicable] e.g., arxiv | biorxiv | report_number | other
+      eprint: __EPRINT__               # [reusability_if_applicable] e.g., "1234.56789" | "SAND2024-XXXXX
+      note: __NOTE__                   # [reusability_if_applicable] e.g., "Available at \url{ark:/12345/abcde}""
                                       # For legacy bibtex entries (that don't accept eprinttype and eprint) and that need to support an ark or other identifiers that don't fit cleanly into the existing fields, the note field can be used to capture this information in a free-text format.
                                       # include a note: field use this format for the note field: note: Available at \url{ark:/12345/abcde}
   # --- Integrity & Fixity -----------------------------------------
@@ -981,7 +1002,7 @@ governed_use:
   # Populate the fields that are relevant to the dataset's current, intended, permitted, out_of_scope, and prohibited use.
   # current_use is required for governed_use_required; the other fields are optional but recommended to support responsible use and discoverability.
   use_governance:                           # [governed_use_required]
-    current_use: __CURRENT_USE__            # [governed_use_required] For in-workflow data: what is this dataset actively
+    current_use: ${CURRENT_USE}            # [governed_use_required] For in-workflow data: what is this dataset actively
                                             # being used for right now? Distinct from intended_use.
     intended_use: __INTENDED_USE__          # [governed_use_if_applicable] Tasks or workflows this dataset is designed to support.
                                             # e.g., ML training | physics analysis | benchmarking | visualization
@@ -1003,7 +1024,7 @@ governed_use:
   non_sensitivity_governance_metadata:                   # [governed_use_required] export control, privacy, right & release as it applies to the dataset as a whole, which may be distinct from the sensitivity or classification of the source data from which it was derived.
     # Export Control & Foreign National Access -----------------------------------------
     export_control:                                      # [governed_use_required]
-      export_control_status: __EXPORT_CONTROL_STATUS__   # [governed_use_required] select one from list: "Yes" | "No" | "Pending_Review" | "Unknown"
+      export_control_status: ${EXPORT_CONTROL_STATUS}   # [governed_use_required] select one from list: "Yes" | "No" | "Pending_Review" | "Unknown"
       export_control_basis: __EXPORT_CONTROL_BASIS__     # [governed_use_if_applicable, required if export_control_status = "Yes"] select one from:
                                                          # ITAR | EAR | DOE_Nuclear_Export_Control | Other | not_applicable
       foreign_national_access_status: __ACCESS_STATUS__  # [governed_use_if_applicable] select one from list: Allowed | Restricted | Prohibited | Conditional | Unknown
@@ -1011,7 +1032,7 @@ governed_use:
     
     # Privacy & Human Subjects -----------------------------------------
     privacy:                                             # [governed_use_required]
-      privacy_status: __PRIVACY_STATUS__                 # [governed_use_required] select one from list: "Yes" | "No" | "Pending_Review" | "Unknown"
+      privacy_status: ${PRIVACY_STATUS}                 # [governed_use_required] select one from list: "Yes" | "No" | "Pending_Review" | "Unknown"
       pii_status: __PII_STATUS__                         # [governed_use_required] select one from list: "Yes" | "No" | "Pending_Review" | "Unknown"
       phi_status: __PHI_STATUS__                         # [governed_use_required] select one from list: "Yes" | "No" | "Pending_Review" | "Unknown"
       privacy_control_basis: []                            # [governed_use_if_applicable] select all that apply: HIPPA | Privacy_Act | Human_Subjects | Other_Regulated_Privacy | Site_Specific | not_applicable
@@ -1020,18 +1041,18 @@ governed_use:
     # Rights & Agreements -----------------------------------------
     rights_release_records:                              # [governed_use_required]
       ip_restriction_type: __IP_RESTRICTION_TYPE__       # [governed_use_if_applicable] select one from list: Proprietary | Limited_Rights | Restricted_Rights | Government_Purpose_Rights | Unlimited_Rights | Third_Party_Licensed | None
-      agreement_required: "__Yes|No__"                   # [governed_use_required] select one from list: "Yes" | "No" — Is a rights release agreement required for use of this dataset?
+      agreement_required: ${AGREEMENT_REQUIRED}          # [governed_use_required] select one from list: "Yes" | "No" — Is a rights release agreement required for use of this dataset?
       agreement_type: []                                 # [governed_use_if_applicable, required if agreement_required = "Yes"] list all that apply: DUA | CRADA | MOU | NDA | LICENSE | WFO | OTHER
-      public_release_status: __PUBLIC_RELEASE_STATUS__   # [governed_use_required] select one from list: "Approved" | "Pending" | "Not_Approved" | "Requires_STI_Review"
-      record_status: __RECORD_STATUS__                   # [governed_use_required] select one from list: "Federal_Record" | "Contractor_Record" | "Non_Record" | "Mixed" | "Unknown"
+      public_release_status: ${PUBLIC_RELEASE_STATUS}   # [governed_use_required] select one from list: "Approved" | "Pending" | "Not_Approved" | "Requires_STI_Review"
+      record_status: ${RECORD_STATUS}                   # [governed_use_required] select one from list: "Federal_Record" | "Contractor_Record" | "Non_Record" | "Mixed" | "Unknown"
 
   # --- Compliance -------------------------------------------------
   # [governed_use_required] Populate when release_status = Under_Review | Approved | Published.
   # Leave blank or omit for draft and in-workflow datasets.
   compliance:                                # [governed_use_required]
-    doe_data_management_plan: "__Yes|No|Unknown__"       # [governed_use_required] select one from list: "Yes" | "No" | "Unknown" — a DOE DMP is on file for this dataset
-    osti_elink2_metadata_compliant: "__Yes|No|Unknown__" # [governed_use_required] select one from list: "Yes" | "No" | "Unknown" — metadata complies with OSTI E-Link 2 API specs
-    irb_approved: "__Yes|No|Unknown|not_applicable__"    # [governed_use_required] select one from list: "Yes" | "No" | "Unknown" | "not_applicable" - IRB approval is in place for this dataset, if applicable
+    doe_data_management_plan: ${DOE_DATA_MANAGEMENT_PLAN}       # [governed_use_required] select one from list: "Yes" | "No" | "Unknown" | "not_applicable" — a DOE DMP is on file for this dataset
+    osti_elink2_metadata_compliant: ${OSTI_ELINK2_METADATA_COMPLIANT} # [governed_use_required] select one from list: "Yes" | "No" | "Unknown" | "not_applicable" — metadata complies with OSTI E-Link 2 API specs
+    irb_approved: ${IRB_APPROVED}    # [governed_use_required] select one from list: "Yes" | "No" | "Unknown" | "not_applicable" - IRB approval is in place for this dataset, if applicable
 
   # --- Review Provenance Companion  ---------------------------------------------
   # [governed_use_if_applicable] Optional companion block for review/provenance data that the team has indicated
@@ -1072,13 +1093,16 @@ ai_usability:
   # in AI/ML workflows. Be explicit — these fields are read by
   # automated pipeline tooling.
   ai_usage:
-    training_use_allowed: __ALLOWED__           # [ai_usability_required] "Yes" | "No" | "Conditional"
-    inference_use_allowed: __ALLOWED__          # [ai_usability_required] "Yes" | "No" | "Conditional"
-    evaluation_use_allowed: __ALLOWED__         # [ai_usability_required] "Yes" | "No" | "Conditional"
-    restrictions: __DESCRIPTION__               # [ai_usability_required] e.g., "Not for clinical decision-making" | "None"
-    bias_risks: __DESCRIPTION__                 # [ai_usability_required] e.g., "Overrepresents samples from facility X" | "None"
-    safety_considerations: __DESC__             # [ai_usability_required] e.g., "Outputs may be export-controlled" | "None"
-    human_review_required: "__Yes|No__"         # [ai_usability_required] "Yes" | "No"
+    training_use_status: ${TRAINING_USE_STATUS}             # [ai_usability_required] "Yes" | "No" | "Conditional"
+    training_use_conditions: ${TRAINING_USE_CONDITIONS}    # [ai_usability_if_applicable, required if training_use_status is "Conditional"] e.g., "Only for non-commercial research" | "Requires citation of SAND2024-XXXXX"
+    inference_use_status: ${INFERENCE_USE_STATUS}            # [ai_usability_required] "Yes" | "No" | "Conditional"
+    inference_use_conditions: ${INFERENCE_USE_CONDITIONS}   # [ai_usability_if_applicable, required if inference_use_status is "Conditional"] e.g., "Only for non-commercial research" | "Requires citation of SAND2024-XXXXX"
+    evaluation_use_status: ${EVALUATION_USE_STATUS}           # [ai_usability_required] "Yes" | "No" | "Conditional"
+    evaluation_use_conditions: ${EVALUATION_USE_CONDITIONS}  # [ai_usability_if_applicable, required if evaluation_use_status is "Conditional"] e.g., "Only for non-commercial research" | "Requires citation of SAND2024-XXXXX"
+    restrictions: ${RESTRICTIONS}               # [ai_usability_required] e.g., "Not for clinical decision-making" | "None"
+    bias_risks: ${BIAS_RISKS}                 # [ai_usability_required] e.g., "Overrepresents samples from facility X" | "None"
+    safety_considerations: ${SAFETY_CONSIDERATIONS}      # [ai_usability_required] e.g., "Outputs may be export-controlled" | "None"
+    human_review_required: ${HUMAN_REVIEW_REQUIRED}         # [ai_usability_required] "Yes" | "No"
 
 # ------------------------------------------------------------
 # REPOSITORY-MANAGED

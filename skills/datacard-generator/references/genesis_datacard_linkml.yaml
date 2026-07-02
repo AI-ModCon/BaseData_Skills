@@ -164,8 +164,6 @@ classes:
         required: true
       product_type:
         required: true
-      dataset_type:
-        required: true
       release_status:
         required: true
       dataset_publisher:
@@ -636,9 +634,6 @@ classes:
       - science_domain
       - schema_reference
       - fields
-    slot_usage:
-      science_domain:
-        description: "The scientific domain or discipline relevant to the domain metadata (e.g., accelerator physics, climate science, genomics)."
 
   SchemaReferenceClass:
     is_a: IdentifierClass
@@ -1398,14 +1393,63 @@ classes:
       Describes whether and how this dataset may be used in AI/ML workflows. 
       
       Be explicit — these fields are read by automated pipeline tooling and AI agents.
+
+      Conditions are required if the corresponding status for training use, inference use, or evaluation use is "Conditional".
     slots:
-      - training_use_allowed
-      - inference_use_allowed
-      - evaluation_use_allowed
+      - training_use_status
+      - training_use_conditions
+      - inference_use_status
+      - inference_use_conditions
+      - evaluation_use_status
+      - evaluation_use_conditions
       - restrictions
       - bias_risks
       - safety_considerations
       - human_review_required
+    slot_usage:
+      training_use_status:
+        required: true
+        description: >-
+          The status of whether this dataset can be used for training in AI/ML workflows. "Yes" | "No" | "Conditional"
+      inference_use_status:
+        description: >-
+          The status of whether this dataset can be used for inference in AI/ML workflows. "Yes" | "No" | "Conditional"
+        required: true
+      evaluation_use_status:
+        description: >-
+          The status of whether this dataset can be used for evaluation in AI/ML workflows. "Yes" | "No" | "Conditional"
+        required: true
+    rules:
+      - description: >-
+          If training_use_status = "Conditional", then training_use_conditions must be present.
+        preconditions:
+          slot_conditions:
+            training_use_status:
+              equals_string: "Conditional"
+        postconditions:
+          slot_conditions:
+            training_use_conditions:
+              value_presence: PRESENT
+      - description: >-
+          If inference_use_status = "Conditional", then inference_use_conditions must be present.
+        preconditions:
+          slot_conditions:
+            inference_use_status:
+              equals_string: "Conditional"
+        postconditions:
+          slot_conditions:
+            inference_use_conditions:
+              value_presence: PRESENT
+      - description: >-
+          If evaluation_use_status = "Conditional", then evaluation_use_conditions must be present.
+        preconditions:
+          slot_conditions:
+            evaluation_use_status:
+              equals_string: "Conditional"
+        postconditions:
+          slot_conditions:
+            evaluation_use_conditions:
+              value_presence: PRESENT
 
   DataQualityClass:
     description: >-
@@ -1450,7 +1494,7 @@ classes:
         preconditions:
           slot_conditions:
             checksum_available:
-                equals_expression: "Yes"
+                equals_string: "Yes"
         postconditions:
           slot_conditions:
             checksum_type:
@@ -1548,9 +1592,12 @@ enums:
   AccessLevelEnum:
     description: "The access level of the document being described."
     permissible_values:
-      - Open
-      - Restricted
-      - Controlled
+      Open:
+        description: "Anyone can discover and access without special permissions."
+      Restricted:
+        description: "Data may be discoverable, but users must satisfy basic access requirements (authentication, institutional affiliation, registration, agreement to terms, etc.). Approval is generally automatic or administrative."
+      Controlled:
+        description: "Access is granted only after review and explicit authorization based on the requester, intended use, legal requirements, or security considerations. Requests may be denied."
   
   DatacardCreationMethodEnum:
     description: "How this datacard was created or most recently updated."
@@ -1958,6 +2005,40 @@ enums:
           such as a government agency, research institution, or commercial provider.
       not_applicable:
         description: "Stewardship level is not applicable or not known for this dataset."
+  
+  ScienceDomainEnum:
+    description: "Controlled vocabulary for the scientific domain or discipline of the dataset. Extends OSTI's identified Subject Areas.'"
+    permissible_values:
+      "Biology and Medicine":
+        description: "The fields of biology and medicine, including subfields such as molecular biology, ecology, evolutionary biology, and medical research."
+      "Chemistry":
+        description: "The field of chemistry, including subfields such as organic chemistry, inorganic chemistry, and physical chemistry."
+      "Energy Storage, Conversion, and Utilization":
+        description: "The field of energy storage, conversion, and utilization, including subfields such as battery technology, fuel cells, and renewable energy systems."
+      "Engineering":
+        description: "The field of engineering, including subfields such as mechanical engineering, electrical engineering, and civil engineering."
+      "Environmental Sciences":
+        description: "The field of environmental sciences, including subfields such as ecology, climate science, and environmental chemistry."
+      "Fission and Nuclear Technologies":
+        description: "The field of fission and nuclear technologies, including subfields such as nuclear reactor physics, nuclear fuel cycle, and nuclear materials."
+      "Fossil Fuels":
+        description: "The field of fossil fuels, including subfields such as petroleum engineering, coal science, and natural gas technology."
+      "Geosciences":
+        description: "The field of geosciences, including subfields such as geology, geophysics, and geochemistry."
+      "Materials":
+        description: "The field of materials science, including subfields such as materials characterization, materials synthesis, and materials modeling."
+      "Mathematics and Computing":
+        description: "The fields of mathematics and computing, including subfields such as algebra, calculus, artificial intelligence, machine learning, and data science."
+      "National Defense":
+        description: "The field of national defense, including subfields such as military technology, defense systems, and security studies."
+      "Physics":
+        description: "The field of physics, including subfields such as particle physics, condensed matter physics, and astrophysics."
+      "Power Generation and Distribution":
+        description: "The field of power generation and distribution, including subfields such as electrical power systems, renewable energy integration, and smart grid technologies."
+      "Renewable Energy":
+        description: "The field of renewable energy, including subfields such as solar energy, wind energy, and bioenergy."
+      "Other":
+        description: "Extends the OSTI Subject Areas; the field is related to a scientific domain not covered by the above categories."
   
   UpdateFrequencyEnum:
     description: "Controlled vocabulary for how frequently the dataset is updated."
@@ -2724,13 +2805,12 @@ slots:
   updated_date:
       range: date
       in_subset:
-        - discoverability_required
+        - discoverability_if_applicable
       description: >-
         The date the datacard was last updated, in ISO 8601 format (YYYY-MM-DD).
         Date of most recent update; revise on every change to the datacard, including minor edits and version updates.
         
         This provides temporal context for the datacard and can be used for tracking its currency and maintenance.
-      required: true
 
   change_log:
       range: ChangeLogEntryClass
@@ -2835,7 +2915,7 @@ slots:
 
   orcid:
       range: string
-      pattern: '^https?://orcid\.org/\d{4}-\d{4}-\d{4}-\d{4}$'
+      pattern: '^https?://orcid\.org/[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{4}$'
       description: "The ORCID identifier for a person, in URL format (e.g., https://orcid.org/0000-0002-1825-0097)."
       in_subset:
         - discoverability_if_applicable
@@ -3031,7 +3111,7 @@ slots:
 
   current_use:
     range: string
-    required: false
+    required: true
     in_subset:
       - governed_use_required
     description: >-
@@ -3406,7 +3486,7 @@ slots:
     required: false
     multivalued: true
     in_subset:
-      - accessibility_required
+      - accessibility_if_applicable
     description: >-
       List of authorizations required. When formal authorization is required to access the dataset, add terms from the
       following AuthorizationRequiredEnum controlled vocabulary 
@@ -3684,12 +3764,14 @@ slots:
       e.g., "SNS Beamline 1B, Oak Ridge National Laboratory, TN, USA"
   
   science_domain:
-    range: string
+    range: ScienceDomainEnum
     in_subset:
       - discoverability_if_applicable
     description: >-
       Scientific domain or discipline this dataset primarily relates to.
-      E.g., physics, e.g., lightsource | fusion | materials | biology
+      Extends the the list of OSTI Subject Areas with an Other category for datasets that do not fit into the OSTI list.
+      Controlled vocabulary:
+      Biology and Medicine | Chemistry | Energy Storage, Conversion, and Utilization | Engineering | Environmental Sciences | Fission and Nuclear Technologies | Fossil Fuels | Geosciences | Materials | Mathematics and Computing | National Defense | Physics | Power Generation and Distribution | Renewable Energy
   
   tags:
     range: TagsClass
@@ -3784,6 +3866,7 @@ slots:
   
   modalities:
     range: string
+    required: true
     multivalued: true
     inlined_as_list: true
     in_subset:
@@ -4254,6 +4337,7 @@ slots:
   
   was_generated_by:
     range: string
+    required: true
     in_subset:
       - interoperability_required
     description: >-
@@ -4293,6 +4377,7 @@ slots:
 
   processing_steps:
     range: string
+    required: true
     multivalued: false
     in_subset:
       - interoperability_required
@@ -4593,7 +4678,6 @@ slots:
 
   comments:
     range: string
-    required: true
     in_subset:
       - governed_use_if_applicable
     description: >-
@@ -4807,7 +4891,7 @@ slots:
     range: YesNoPendingUnknownEnum
     required: true
     in_subset:
-      - governed_use_if_applicable
+      - governed_use_required
     description: >-
       Whether the dataset contains protected health information (PHI), following a controlled vocabulary (use quotes to distinguish from boolean values): 
       "Yes" | "No" | "Pending_Review" | "Unknown"
@@ -4849,7 +4933,6 @@ slots:
 
   ip_restriction_type:
     range: IPRestrictionTypeEnum
-    required: true
     in_subset:
       - governed_use_if_applicable
     description: >-
@@ -4911,33 +4994,33 @@ slots:
       which can inform their confidence in the dataset's quality and reliability.
 
   doe_data_management_plan:
-    range: YesNoUnknownEnum
-    required: false
+    range: YesNoUnknownNotApplicableEnum
+    required: true
     in_subset:
       - governed_use_required
     description: >-
-      "Yes"|"No" — Whether the dataset is in compliance with a DOE Data Management Plan (DMP), if applicable.
+      "Yes"|"No"|"Unknown"|"not_applicable" — Whether the dataset is in compliance with a DOE Data Management Plan (DMP), if applicable.
       
       This can provide users with information about the dataset's data management practices and can inform their confidence in the dataset's quality and reliability.
   
   osti_elink2_metadata_compliant:
-    range: YesNoUnknownEnum
-    required: false
+    range: YesNoUnknownNotApplicableEnum
+    required: true
     in_subset:
       - governed_use_required
     description: >-
-      "Yes"|"No" — Whether the dataset is compliant with OSTI's E-Link 2.0 metadata requirements, if applicable.
+      "Yes"|"No"|"Unknown"|"not_applicable" — Whether the dataset is compliant with OSTI's E-Link 2.0 metadata requirements, if applicable.
       
       This can provide users with information about the dataset's adherence to OSTI's metadata standards, 
       which can inform their confidence in the dataset's quality and reliability.
 
   irb_approved:
     range: YesNoUnknownNotApplicableEnum
-    required: false
+    required: true
     in_subset:
       - governed_use_required
     description: >-
-      "Yes"|"No" — Whether the dataset has been approved by an Institutional Review Board (IRB), if applicable.
+      "Yes"|"No"|"Unknown"|"not_applicable" — Whether the dataset has been approved by an Institutional Review Board (IRB), if applicable.
       
       This can provide users with information about the ethical considerations and protections associated with the dataset, 
       which can inform their confidence in the dataset's quality and reliability.
@@ -5092,7 +5175,7 @@ slots:
       Is intended to align with bibtex "note" field when preferred_citation is provided.
       For legacy bibtex entries that don't accept eprinttype and eprint and
       that need to support an ark or other identifiers that don't fit cleanly into the existing fields, the note field can be used to capture this information in a free-text format.
-      include a note: field use this format for the note field: note: Available at \url{ark:/12345/abcde}
+      include a note: field use this format for the note field: note: Available at ark:/12345/abcde
       
       This can provide users with additional context and information about the preferred citation for the dataset.
 
@@ -5111,7 +5194,7 @@ slots:
       
       AI/ML applications and can inform users about any specific considerations or restrictions related to using the dataset in AI/ML workflows. 
 
-  training_use_allowed:
+  training_use_status:
     range: YesNoConditionalEnum
     in_subset:
       - ai_usability_required
@@ -5127,7 +5210,16 @@ slots:
         
         "Conditional" — suitable for training under conditions described in restrictions
   
-  inference_use_allowed:
+  training_use_conditions:
+    range: string
+    required: false
+    in_subset:
+      - ai_usability_if_applicable
+    description: >-
+        If training_use_status = "Conditional", this field is required and describes the specific conditions or restrictions that must be met for the dataset to be used for training AI models.
+        This can provide users with important information about any limitations or considerations they should be aware of when using the dataset for training AI models.
+  
+  inference_use_status:
     range: YesNoConditionalEnum
     in_subset:
       - ai_usability_required
@@ -5143,7 +5235,16 @@ slots:
         
         "Conditional" — suitable for inference under conditions described in restrictions
   
-  evaluation_use_allowed:
+  inference_use_conditions:
+    range: string
+    required: false
+    in_subset:
+      - ai_usability_if_applicable
+    description: >-
+        If inference_use_status = "Conditional", this field is required and describes the specific conditions or restrictions that must be met for the dataset to be used for inference with AI models.
+        This can provide users with important information about any limitations or considerations they should be aware of when using the dataset for inference with AI models.
+
+  evaluation_use_status:
     range: YesNoConditionalEnum
     in_subset:
       - ai_usability_required
@@ -5159,6 +5260,15 @@ slots:
         
         "Conditional" — suitable for evaluation under conditions described in restrictions
   
+  evaluation_use_conditions:
+    range: string
+    required: false
+    in_subset:
+      - ai_usability_if_applicable
+    description: >-
+        If evaluation_use_status = "Conditional", this field is required and describes the specific conditions or restrictions that must be met for the dataset to be used for evaluation of AI models.
+        This can provide users with important information about any limitations or considerations they should be aware of when using the dataset for evaluation of AI models.
+
   restrictions:
     range: string
     required: true
@@ -5294,7 +5404,6 @@ slots:
 
   noise_characteristics:
     range: string
-    required: true
     in_subset:
       - reusability_if_applicable
     description: >-
@@ -5315,7 +5424,6 @@ slots:
   
   uncertainty_notes:
     range: string
-    required: true
     in_subset:
       - reusability_if_applicable
     description: >-
