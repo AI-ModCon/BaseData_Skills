@@ -159,27 +159,19 @@ required fields. Ask **3-5 at a time** following the batches in
 
 ### 7. Cross-check identifiers via live APIs
 
+**Step 7 is not optional. Do not proceed to step 8 (write) without
+completing it.** Datacards with unverified identifiers can silently
+misattribute authorship, funding, or DOIs — worse than a
+slightly-incomplete card.
+
 For EVERY ORCID, ROR, DOI, and OSTI award number in the datacard —
 whether the user provided it or introspection inferred it — resolve it
 against the public API per `references/live-enrichment.md`. **Do not
 skip this step.** Run it even when the field is already populated.
 
-Identifiers to check (v2 paths, when present):
-
-- Every `discoverability.authors[].person.orcid` and `…person.affiliation.ror_id`
-- Every `discoverability.authors[].organization.ror_id`
-- Every `discoverability.contributors[].person.orcid` and `…ror_id`
-- `discoverability.contact.person.orcid` and `…ror_id`
-- Every `discoverability.additional_contacts[].person.orcid` and `…ror_id`
-- `reusability.stewardship.maintainer.person.orcid` and `…ror_id` (when `supports_reusability=Yes`)
-- Every `governed_use.review_provenance_companion[].reviewed_by.person.orcid` (when `supports_governed_use=Yes`)
-- Every `discoverability.sponsor_organizations[].ror_id` and `…award_number` (the latter via OSTI)
-- Every `discoverability.research_organizations[].ror_id`
-- Every `discoverability.facilities[].ror_id` and `…location.ror_id`
-- `discoverability.identification.primary_id.value` (if `type: doi`)
-- Every `discoverability.identification.additional_ids[].value` of type `doi`
-- Every `interoperability.related_resources.datasets[].identifier.value` (if `type: doi`)
-- Every `interoperability.related_resources.publications[].value` (if `type: doi` or `arxiv`)
+Enrich every path listed under "Identifier paths to check" in
+`references/live-enrichment.md`. The list is grouped by capability so you
+can skip capabilities the user opted out of.
 
 For each lookup:
 
@@ -188,6 +180,11 @@ For each lookup:
 - **Datacard incomplete** — API has fields the datacard doesn't; offer to add.
 - **Does not resolve** (404, error) — warn the user; likely typo.
 - **Rate-limited** — retry once; if still failing, log and move on.
+
+Present ALL findings from all identifiers to the user as a single
+consolidated table (see `references/live-enrichment.md` § Batching
+guidance). Do NOT prompt after each individual lookup — batch the
+WebFetch calls, then present one summary.
 
 Use `WebFetch`. Endpoints in [references/live-enrichment.md](references/live-enrichment.md).
 
