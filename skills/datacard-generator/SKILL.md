@@ -14,9 +14,12 @@ introspection can't infer.
 The skill also has a one-shot **Convert** path for migrating an existing
 MODCON v1 datacard to Genesis v1.2.
 
-**Validation is driven by the upstream JSON Schema** (`references/genesis_datacard.schema.json`)
-applied via `scripts/validate_datacard.py`. The few warn-level rules JSON
-Schema cannot express live in `references/validation-rules.md`.
+**Validation is driven by the upstream Pydantic model** (`scripts/genesis_models.py`)
+applied via `scripts/validate_datacard.py`. The JSON Schema at
+`references/genesis_datacard.schema.json` is a parallel reference (also
+generated from the LinkML source) for tools that prefer JSON Schema; it is
+NOT the primary validator source. The few warn-level rules the schema
+cannot express live in `references/validation-rules.md`.
 
 ## Workflow
 
@@ -83,7 +86,7 @@ using this decision table (paths use v2 capability-container structure):
 | `discoverability.datacard.change_log[0]` | always (`change_date`, `datacard_version: "1.2"`, "Initial creation" or "Converted from MODCON v1") | — |
 | `discoverability.datacard.filename` | computed from `discoverability.identification.name` (see Filename rule below) | — |
 | `discoverability.datacard.language` | always → `en` (override if README is non-English) | — |
-| `discoverability.datacard.created_by[]` | always (AI model first if Hybrid; see Gotcha #4) | — |
+| `discoverability.datacard.created_by[]` | always (AI model first if Hybrid; see `references/gotchas.md`) | — |
 | `discoverability.identification.name` | from README / CITATION.cff title | prompt |
 | `discoverability.identification.version` | from CITATION.cff or default `"1.0"` | prompt |
 | `discoverability.product_type` | never — `ProductTypeEnum` (see `references/lookup-tables.md`) | always prompt |
@@ -104,8 +107,8 @@ using this decision table (paths use v2 capability-container structure):
 | `_repository.*` | **NEVER** — system-owned | — |
 
 For each `supports_X=Yes`, also write `supports_X: "Yes"` at the top level
-of the YAML. The JSON Schema enforces that the matching `X:` block must
-exist when `supports_X=Yes`.
+of the YAML. The schema (via Pydantic) enforces that the matching `X:` block
+must exist when `supports_X=Yes`.
 
 ORCID, ROR, DOI, and OSTI award numbers gathered here will be
 **cross-checked against their public APIs in step 7** — not optional.
@@ -271,14 +274,15 @@ When the user asks to convert an existing MODCON v1 datacard:
 
 ## Gotchas (read before generating)
 
-1. **Title_Case for all enum values.** v2 uses `Published`, `Draft`, `Raw`,
-   `Hybrid`, `Yes`, `No` — NOT lowercase. The JSON Schema enforces this.
+For additional gotchas (chronological ordering, `ai_model`/`software`
+relationship requirement, etc.), see
+[references/gotchas.md](references/gotchas.md).
 
-2. **`workflow.state` ≠ `release_status`.** Both are needed (under
+1. **`workflow.state` ≠ `release_status`.** Both are needed (under
    `discoverability.workflow.state` and `discoverability.release_status`).
    Recommended alignments are in `references/lookup-tables.md`.
 
-3. **Sensitivity is no longer a tier ladder.** Use
+2. **Sensitivity is no longer a tier ladder.** Use
    `OverallSensitivityEnum` (`Public | Unclassified_Uncontrolled | CUI |
    UCNI | Classified | Legacy_Controlled | Mixed | Other_Controlled`) on
    both `discoverability.datacard.sensitivity.overall_sensitivity` (the
@@ -286,78 +290,54 @@ When the user asks to convert an existing MODCON v1 datacard:
    dataset). These are independent and often differ — never default them
    to match.
 
-4. **`created_by` chronological ordering**: when
-   `creation_method=Hybrid`, list the `ai_model` entry first (initial
-   draft), then any `person` entry (reviewer).
-
-5. **CRediT roles** are multi-valued and replace the old role enum.
-   See `references/lookup-tables.md` for the 16 valid values.
-
-6. **`primary_id.type`** should not be `doi` before a DOI is minted.
+3. **`primary_id.type`** should not be `doi` before a DOI is minted.
    Use `ark`, `local`, or `unregistered` for pre-publication states.
 
-7. **`provenance.was_generated_by`** is required (when
+4. **`provenance.was_generated_by`** is required (when
    `supports_interoperability=Yes`) and often forgotten. Even a one-line
    answer adds catalog value.
 
-8. **`change_log` is append-only.** On re-runs, add a new entry plus
+5. **`change_log` is append-only.** On re-runs, add a new entry plus
    `updated_date` bump. Never edit or delete prior entries. The field
-   name inside each entry is `datacard_version` (the upstream template at line 244 has a typo — `data_card_version` — that conflicts with the schema; our local copy is fixed).
+   name inside each entry is `datacard_version` (see UPSTREAM_VERSION.md
+   for the upstream typo we patched).
 
-9. **`_repository` block is system-owned.** Do not populate. Leave it
+6. **`_repository` block is system-owned.** Do not populate. Leave it
    as-is in the template (the underscore prefix is the parser signal).
 
-10. **`supports_discoverability` is always `"Yes"`.** The JSON Schema
-    enforces this — every Genesis datacard has at least the
-    discoverability block.
+7. **`supports_discoverability` is always `"Yes"`.** The schema (via
+   Pydantic) enforces this — every Genesis datacard has at least the
+   discoverability block.
 
-11. **Filename convention** is `genesis_datacard_<snake_case>.md` — not
-    `modcon_datacard_*` (legacy v1 prefix).
+8. **`role[]` lives INSIDE the agent sub-block, not on the agent entry
+   itself.** `AgentClass` (used by `created_by`, `contact`,
+   `additional_contacts`, `authors`, `contributors`, `facilities`,
+   `related_resources.software|ai_models`) has no top-level `role` slot —
+   it is a tagged union of `person` / `organization` / `ai_model` /
+   `software`, and each of those four sub-classes carries its own `role[]`
+   (CRediT taxonomy). Do **not** write `role:` as a sibling of `person:`.
+   Correct shape:
+   ```yaml
+   - contribution_date: "2026-07-01"
+     creator:
+       person:
+         given_name: "Jane"
+         family_name: "Doe"
+         role: [Conceptualization, Data_Curation]   # inside person, not sibling
+   ```
 
-12. **No `dataset_readiness` YAML field.** Genesis v1.2 does not have a
-    top-level `dataset_readiness` key. Readiness is expressed through
-    which `supports_*` flags are set to `"Yes"` and in narrative prose.
+9. **`science_domain` is a closed, quoted-string-with-spaces enum.**
+   `discoverability.dataset_description.science_domain` and
+   `interoperability.domain_metadata.science_domain` both use
+   `ScienceDomainEnum`, unlike every other enum in the schema which uses
+   `Title_Case` / `snake_case` tokens. See `references/lookup-tables.md`
+   for the full list. Free text is no longer accepted.
 
-13. **`role[]` lives INSIDE the agent sub-block, not on the agent entry
-    itself.** `AgentClass` (used by `created_by`, `contact`,
-    `additional_contacts`, `authors`, `contributors`, `facilities`,
-    `related_resources.software|ai_models`) has no top-level `role` slot —
-    it is a tagged union of `person` / `organization` / `ai_model` /
-    `software`, and each of those four sub-classes carries its own `role[]`
-    (CRediT taxonomy). Do **not** write `role:` as a sibling of `person:`.
-    Correct shape:
-    ```yaml
-    - contribution_date: "2026-07-01"
-      creator:
-        person:
-          given_name: "Jane"
-          family_name: "Doe"
-          role: [Conceptualization, Data_Curation]   # inside person, not sibling
-    ```
-
-14. **`science_domain` is a closed, quoted-string-with-spaces enum.**
-    `discoverability.dataset_description.science_domain` and
-    `interoperability.domain_metadata.science_domain` both use
-    `ScienceDomainEnum` — 15 values, all quoted strings containing spaces
-    (e.g., `"Biology and Medicine"`, `"Energy Storage, Conversion, and
-    Utilization"`), unlike every other enum in the schema which uses
-    `Title_Case` / `snake_case` tokens. See `references/lookup-tables.md`
-    for the full list. Free text is no longer accepted.
-
-15. **`ai_model`/`software` agents require a `relationship` slot.** When
-    `discoverability.datacard.created_by[].creator.ai_model` or `.software`
-    is populated, `relationship` is required — one of `used_to_create |
-    used_to_process | used_to_analyze | recorded_by | trained_on |
-    evaluated_on` (`ExtendedRelationshipEnum`; there is no `other` value
-    despite some upstream docs implying one). The same enum applies to
-    `interoperability.related_resources.software[].relationship` and
-    `.ai_models[].relationship`.
-
-16. **`discoverability.datacard.updated_date` is now `if_applicable`, not
+10. **`discoverability.datacard.updated_date` is now `if_applicable`, not
     required.** Leave it blank on initial creation (a datacard that has
     never been updated has nothing to report). Only set it when performing
     a genuine update to an existing datacard, alongside a new `change_log`
-    entry (see Gotcha #8).
+    entry (see Gotcha #5).
 
 ---
 
@@ -365,8 +345,9 @@ When the user asks to convert an existing MODCON v1 datacard:
 
 - **Template (do not edit)**: [references/genesis_v1.0_template.md](references/genesis_v1.0_template.md)
 - **Template YAML reference**: [references/genesis_v1.0_template.yaml](references/genesis_v1.0_template.yaml)
-- **JSON Schema** (validator source of truth): `references/genesis_datacard.schema.json`
+- **Pydantic model** (validator source of truth): `scripts/genesis_models.py`
 - **LinkML schema source**: `references/genesis_datacard_linkml.yaml`
+- **JSON Schema** (parallel reference, not the primary validator source): `references/genesis_datacard.schema.json`
 - **Field-by-field guidance**: [references/genesis_field_guide.md](references/genesis_field_guide.md)
 - **Per-capability prompts**: [references/capability-prompts.md](references/capability-prompts.md)
 - **Body-fill guide**: [references/body-fill-guide.md](references/body-fill-guide.md)

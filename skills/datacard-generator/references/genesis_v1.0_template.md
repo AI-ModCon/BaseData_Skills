@@ -1294,7 +1294,7 @@ For example:
 [!TODO] <REPLACE: Provide a recommended citation if known. Recommend bibtex format.><metadata_key: reusability.citation.preferred_citation>
 
 ## License and Usage Rights  [reusability_if_applicable]
-[!TODO] <REPLACE: Describe the license under which the dataset is shared, and any usage and contractual rights or restrictions. If no formal license, describe specific permissions for reuse.><metadata_key: reusability.license.spdx_id><metadata_key: reusability.license.license_name> <metadata_key: reusability.license.license_url><metadata_key: reusability.additional_licenses>
+[!TODO] <REPLACE: Describe the license under which the dataset is shared, and any usage and contractual rights or restrictions. If no formal license, describe specific permissions for reuse.><metadata_key: reusability.license.spdx_id><metadata_key: reusability.license.name> <metadata_key: reusability.license.url><metadata_key: reusability.additional_licenses>
 
 ## Maintenance & Updates  [reusability_if_applicable]
 [!TODO] <REPLACE: Describe update expectations and stewardship responsibility.><metadata_key: reusability.stewardship.maintainer><metadata_key: reusability.stewardship.level><metadata_key: reusability.stewardship.update_frequency><metadata_key: reusability.stewardship.retention_policy>
