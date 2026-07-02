@@ -47,11 +47,24 @@ def _setp(target: dict, dotted: str, value: Any) -> None:
     cur[parts[-1]] = value
 
 
+def _as_orcid_url(raw: str) -> str:
+    """Normalize a bare ORCID id to the v2-required URL format.
+
+    v2 requires ``https://orcid.org/XXXX-XXXX-XXXX-XXXX``; v1 sources sometimes
+    supply just the bare id. Pass URLs through unchanged.
+    """
+    raw = raw.strip()
+    if raw.startswith("http://") or raw.startswith("https://"):
+        return raw
+    return f"https://orcid.org/{raw}"
+
+
 def _person_from_v1(v1_person: dict) -> dict:
     """Convert a v1 person sub-dict to a v2 person dict.
 
     Key rename: affiliation.type → removed (not in v2 person schema).
-    Contact/created_by entries use agent_type at a higher level, not inside person.
+    Note: v2 AgentClass has no discriminator field (see _make_agent) — the
+    caller is responsible for placing this dict under person/organization/etc.
     """
     out: dict[str, Any] = {}
     name = v1_person.get("name", "")
@@ -59,16 +72,46 @@ def _person_from_v1(v1_person: dict) -> dict:
         parts = name.split(None, 1)
         out["given_name"] = parts[0]
         out["family_name"] = parts[1] if len(parts) > 1 else ""
-    for key in ("orcid", "email"):
-        if key in v1_person:
-            out[key] = v1_person[key]
+    if v1_person.get("orcid"):
+        out["orcid"] = _as_orcid_url(v1_person["orcid"])
+    if v1_person.get("email"):
+        out["email"] = v1_person["email"]
     if "affiliation" in v1_person:
-        aff = v1_person["affiliation"]
-        out["affiliation"] = {
-            "name": aff.get("name", ""),
-            "ror_id": aff.get("ror_id", "__ROR_ID__"),
-        }
+        aff = v1_person["affiliation"] or {}
+        aff_out: dict[str, Any] = {"name": aff.get("name", "")}
+        if aff.get("ror_id"):
+            aff_out["ror_id"] = aff["ror_id"]
+        out["affiliation"] = aff_out
     return out
+
+
+def _organization_from_v1(v1_org: dict) -> dict:
+    """Convert a v1 organization sub-dict to a v2 organization dict."""
+    out: dict[str, Any] = {}
+    name = v1_org.get("name") or v1_org.get("organization_name")
+    if name:
+        out["name"] = name
+    if v1_org.get("ror_id"):
+        out["ror_id"] = v1_org["ror_id"]
+    return out
+
+
+def _make_agent(agent_kind: str, sub_block: dict, roles: list[str] | None = None) -> dict:
+    """Build a v1.2 AgentClass entry.
+
+    v1.2's AgentClass has no discriminator field — exactly one of
+    person/organization/ai_model/software must be populated (AgentClass.rules).
+    CRediT roles live inside that sub-block's ``role`` list, not at the
+    AgentClass or author-entry level.
+
+    agent_kind: 'person' | 'organization' | 'ai_model' | 'software'
+    sub_block: the fields going into person/organization/ai_model/software
+    roles: CRediT roles list (goes inside sub_block['role'])
+    """
+    block = dict(sub_block)
+    if roles:
+        block["role"] = roles
+    return {agent_kind: block}
 
 
 # ---------- Title-case re-casing ----------
@@ -124,6 +167,92 @@ def _credit_roles_from_v1_role(v1_role: str | None) -> list[str]:
     return _CREDIT_ROLE_MAP.get(v1_role.lower(), ["Other"])
 
 
+# ---------- ScienceDomainEnum mapping (v1.2 closed vocabulary, 15 values) ----------
+
+_SCIENCE_DOMAIN_KEYWORDS: list[tuple[str, str]] = [
+    ("bio", "Biology and Medicine"),
+    ("medic", "Biology and Medicine"),
+    ("chem", "Chemistry"),
+    ("energy storage", "Energy Storage, Conversion, and Utilization"),
+    ("battery", "Energy Storage, Conversion, and Utilization"),
+    ("fuel cell", "Energy Storage, Conversion, and Utilization"),
+    ("engineer", "Engineering"),
+    ("environment", "Environmental Sciences"),
+    ("climate", "Environmental Sciences"),
+    ("ecolog", "Environmental Sciences"),
+    ("nuclear", "Fission and Nuclear Technologies"),
+    ("fission", "Fission and Nuclear Technologies"),
+    ("fossil", "Fossil Fuels"),
+    ("petroleum", "Fossil Fuels"),
+    ("coal", "Fossil Fuels"),
+    ("natural gas", "Fossil Fuels"),
+    ("geo", "Geosciences"),
+    ("material", "Materials"),
+    ("math", "Mathematics and Computing"),
+    ("comput", "Mathematics and Computing"),
+    ("data science", "Mathematics and Computing"),
+    ("machine learning", "Mathematics and Computing"),
+    ("artificial intelligence", "Mathematics and Computing"),
+    ("defense", "National Defense"),
+    ("military", "National Defense"),
+    ("physic", "Physics"),
+    ("power generation", "Power Generation and Distribution"),
+    ("power distribution", "Power Generation and Distribution"),
+    ("grid", "Power Generation and Distribution"),
+    ("renewable", "Renewable Energy"),
+    ("solar", "Renewable Energy"),
+    ("wind energy", "Renewable Energy"),
+]
+
+
+def _map_science_domain(v1_value: str | None) -> str | None:
+    """Best-effort map a v1 free-text science_domain to the closed ScienceDomainEnum.
+
+    Returns the canonical quoted-string enum value, or None if there's no
+    v1_value or no clean keyword match (caller should flag for user input
+    rather than guess — a wrong pick silently degrades catalog quality).
+    """
+    if not v1_value or not isinstance(v1_value, str):
+        return None
+    val = v1_value.strip().lower()
+    if not val:
+        return None
+    for keyword, enum_value in _SCIENCE_DOMAIN_KEYWORDS:
+        if keyword in val:
+            return enum_value
+    return None
+
+
+# ---------- ai_usage status mapping (v1 bool/str → v2 enum strings) ----------
+
+def _map_use_status(v1_value: Any) -> str | None:
+    """Map a v1 true/false/'conditional' AI-usage value to v2 YesNoConditionalEnum."""
+    if isinstance(v1_value, bool):
+        return "Yes" if v1_value else "No"
+    if isinstance(v1_value, str):
+        v = v1_value.strip().lower()
+        if v in ("true", "yes"):
+            return "Yes"
+        if v in ("false", "no"):
+            return "No"
+        if v == "conditional":
+            return "Conditional"
+    return None
+
+
+def _map_yes_no(v1_value: Any) -> str | None:
+    """Map a v1 true/false AI-usage value to v2 YesNoEnum."""
+    if isinstance(v1_value, bool):
+        return "Yes" if v1_value else "No"
+    if isinstance(v1_value, str):
+        v = v1_value.strip().lower()
+        if v in ("true", "yes"):
+            return "Yes"
+        if v in ("false", "no"):
+            return "No"
+    return None
+
+
 # ---------- supports_* flag inference ----------
 
 def _infer_supports(v1: dict) -> dict[str, str]:
@@ -153,6 +282,7 @@ def convert(v1: dict) -> ConversionReport:  # noqa: C901 (complexity OK for a ma
     today = date.today().isoformat()
     g: dict = {}
     consumed: set[str] = set()
+    manual_missing: list[str] = []
 
     # --- supports_* flags (top-level) ---
     supports = _infer_supports(v1)
@@ -161,8 +291,8 @@ def convert(v1: dict) -> ConversionReport:  # noqa: C901 (complexity OK for a ma
 
     # --- discoverability.datacard ---
     creation = v1.get("datacard_creation", {}) or {}
-    _setp(g, "discoverability.datacard.template_version", "1.0")
-    _setp(g, "discoverability.datacard.datacard_version", "1.0")
+    _setp(g, "discoverability.datacard.template_version", "1.2")
+    _setp(g, "discoverability.datacard.datacard_version", "1.2")
     _setp(g, "discoverability.datacard.creation_method",
           _titlecase(creation.get("creation_method", "Hybrid")))
     _setp(g, "discoverability.datacard.created_date",
@@ -170,37 +300,47 @@ def convert(v1: dict) -> ConversionReport:  # noqa: C901 (complexity OK for a ma
     _setp(g, "discoverability.datacard.updated_date", today)
     _setp(g, "discoverability.datacard.language", "en")
     _setp(g, "discoverability.datacard.change_log", [
-        {"change_date": today, "datacard_version": "1.0", "summary": "Converted from MODCON v1"}
+        {"change_date": today, "datacard_version": "1.2", "summary": "Converted from MODCON v1"}
     ])
 
-    # created_by: rename type → agent_type, date key → contribution_date
+    # created_by: v1.2 AgentClass has no discriminator field — build via
+    # _make_agent so exactly one of person/organization/ai_model/software is set.
     v1_creators = creation.get("created_by", []) or []
     if v1_creators:
         g_creators = []
         for c in v1_creators:
             entry: dict[str, Any] = {}
-            entry["agent_type"] = c.get("type", "person")
             contribution_date = (
                 c.get("contribution_date")
                 or c.get("date")
                 or creation.get("created_date", today)
             )
             entry["contribution_date"] = contribution_date
-            # creator sub-dict
-            creator: dict[str, Any] = {}
             agent_t = c.get("type", "person")
-            creator["agent_type"] = agent_t
-            if agent_t == "person" and "person" in c:
-                creator["person"] = _person_from_v1(c["person"])
+            if agent_t == "organization" and "organization" in c:
+                agent_kind, sub_block = "organization", _organization_from_v1(c["organization"])
             elif "ai_model" in c:
                 ai = dict(c["ai_model"])
                 # rename date_accessed → accessed_date
                 if "date_accessed" in ai:
                     ai["accessed_date"] = ai.pop("date_accessed")
-                creator["ai_model"] = ai
-            entry["creator"] = creator
+                # v1.2 requires a relationship on ai_model creators; default to
+                # used_to_create (matches Hybrid creation-method semantics).
+                ai.setdefault("relationship", "used_to_create")
+                agent_kind, sub_block = "ai_model", ai
+            elif "software" in c:
+                sw = dict(c["software"])
+                sw.setdefault("relationship", "used_to_create")
+                agent_kind, sub_block = "software", sw
+            elif "person" in c:
+                agent_kind, sub_block = "person", _person_from_v1(c["person"])
+            else:
+                continue
+            roles = _credit_roles_from_v1_role(c["role"]) if c.get("role") else None
+            entry["creator"] = _make_agent(agent_kind, sub_block, roles)
             g_creators.append(entry)
-        _setp(g, "discoverability.datacard.created_by", g_creators)
+        if g_creators:
+            _setp(g, "discoverability.datacard.created_by", g_creators)
     consumed.add("datacard_creation")
 
     # --- discoverability.identification ---
@@ -223,23 +363,34 @@ def convert(v1: dict) -> ConversionReport:  # noqa: C901 (complexity OK for a ma
                 _setp(g, "discoverability.dataset_description.keywords", desc["keywords"])
         consumed.add("description")
 
+    # --- discoverability.dataset_description.science_domain (v1.2 closed enum) ---
+    categorization = v1.get("categorization", {}) or {}
+    if categorization.get("science_domain"):
+        mapped_domain = _map_science_domain(categorization["science_domain"])
+        if mapped_domain:
+            _setp(g, "discoverability.dataset_description.science_domain", mapped_domain)
+        else:
+            manual_missing.append("discoverability.dataset_description.science_domain")
+        consumed.add("categorization")
+
     # --- discoverability.release_status ---
     if "release_status" in v1:
         _setp(g, "discoverability.release_status", _titlecase(v1["release_status"]))
         consumed.add("release_status")
 
     # --- discoverability.authors ---
+    # v1.2: CRediT roles live inside author.person/organization.role, not at
+    # the author-entry level (see _make_agent).
     if "authors" in v1:
         g_authors = []
         for a in v1["authors"] or []:
-            v1_role = a.get("role")
-            credit_roles = _credit_roles_from_v1_role(v1_role)
-            entry_a: dict[str, Any] = {
-                "agent_type": "person",
-                "credit_roles": credit_roles,
-            }
-            if "person" in a:
-                entry_a["person"] = _person_from_v1(a["person"])
+            roles = _credit_roles_from_v1_role(a.get("role"))
+            if a.get("type") == "organization" and "organization" in a:
+                entry_a = _make_agent("organization", _organization_from_v1(a["organization"]), roles)
+            elif "person" in a:
+                entry_a = _make_agent("person", _person_from_v1(a["person"]), roles)
+            else:
+                continue
             g_authors.append(entry_a)
         if g_authors:
             _setp(g, "discoverability.authors", g_authors)
@@ -249,26 +400,24 @@ def convert(v1: dict) -> ConversionReport:  # noqa: C901 (complexity OK for a ma
     if "contributors" in v1:
         g_contribs = []
         for c in v1["contributors"] or []:
-            v1_role = c.get("role")
-            credit_roles = _credit_roles_from_v1_role(v1_role)
-            entry_c: dict[str, Any] = {
-                "agent_type": "person",
-                "credit_roles": credit_roles,
-            }
-            if "person" in c:
-                entry_c["person"] = _person_from_v1(c["person"])
+            roles = _credit_roles_from_v1_role(c.get("role"))
+            if c.get("type") == "organization" and "organization" in c:
+                entry_c = _make_agent("organization", _organization_from_v1(c["organization"]), roles)
+            elif "person" in c:
+                entry_c = _make_agent("person", _person_from_v1(c["person"]), roles)
+            else:
+                continue
             g_contribs.append(entry_c)
         if g_contribs:
             _setp(g, "discoverability.contributors", g_contribs)
         consumed.add("contributors")
 
     # --- discoverability.contact ---
+    # v1.2 ContactClass only has a (required) `person` slot — no agent_type
+    # discriminator and no organization/ai_model/software alternatives.
     if "contact" in v1:
         c_v1 = v1["contact"] or {}
-        # rename type → agent_type
-        agent_type = c_v1.get("type", "person")
-        _setp(g, "discoverability.contact.agent_type", agent_type)
-        if agent_type == "person" and "person" in c_v1:
+        if "person" in c_v1:
             _setp(g, "discoverability.contact.person", _person_from_v1(c_v1["person"]))
         consumed.add("contact")
 
@@ -346,7 +495,35 @@ def convert(v1: dict) -> ConversionReport:  # noqa: C901 (complexity OK for a ma
     if v1.get("reviews"):
         consumed.add("reviews")
 
-    # --- ai_usability (requires supports_ai_usability=Yes) ---
+    # --- ai_usability.ai_usage (requires supports_ai_usability=Yes) ---
+    # v1.2 renames: training_use_allowed → training_use_status (+ *_conditions
+    # required iff status == "Conditional"); same for inference_use_status.
+    # v1 has no evaluation_use_allowed equivalent, so evaluation_use_status is
+    # left unset and will surface via MISSING_REQUIRED for user input.
+    if supports["supports_ai_usability"] == "Yes":
+        au = v1.get("ai_usage", {}) or {}
+        training_status = _map_use_status(au.get("training_use_allowed"))
+        if training_status:
+            _setp(g, "ai_usability.ai_usage.training_use_status", training_status)
+            if training_status == "Conditional":
+                _setp(g, "ai_usability.ai_usage.training_use_conditions",
+                      au.get("restrictions") or "${TRAINING_USE_CONDITIONS}")
+        inference_status = _map_use_status(au.get("inference_use_allowed"))
+        if inference_status:
+            _setp(g, "ai_usability.ai_usage.inference_use_status", inference_status)
+            if inference_status == "Conditional":
+                _setp(g, "ai_usability.ai_usage.inference_use_conditions",
+                      au.get("restrictions") or "${INFERENCE_USE_CONDITIONS}")
+        for v1_key, g_leaf in (
+            ("restrictions", "restrictions"),
+            ("bias_risks", "bias_risks"),
+            ("safety_considerations", "safety_considerations"),
+        ):
+            if au.get(v1_key):
+                _setp(g, f"ai_usability.ai_usage.{g_leaf}", au[v1_key])
+        human_review = _map_yes_no(au.get("human_review_required"))
+        if human_review:
+            _setp(g, "ai_usability.ai_usage.human_review_required", human_review)
     if v1.get("ai_usage"):
         consumed.add("ai_usage")
 
@@ -365,9 +542,14 @@ def convert(v1: dict) -> ConversionReport:  # noqa: C901 (complexity OK for a ma
     if "dataset_readiness" in v1:
         orphans.insert(0, "dataset_readiness (dropped: no equivalent in Genesis v2)")
 
-    # Validator: use the Pydantic-model-driven validator, extract MISSING_REQUIRED codes
+    # Validator: use the Pydantic-model-driven validator, extract MISSING_REQUIRED codes.
+    # Merge in fields the converter deliberately left unset for user selection
+    # (e.g. science_domain with no clean enum match) even though the schema
+    # itself marks them optional.
     result = vd.validate(g)
-    missing_required = sorted({f.field for f in result.findings if f.code == "MISSING_REQUIRED"})
+    missing_required = sorted(
+        {f.field for f in result.findings if f.code == "MISSING_REQUIRED"} | set(manual_missing)
+    )
 
     return ConversionReport(
         genesis=g,
