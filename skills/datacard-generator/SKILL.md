@@ -27,7 +27,7 @@ Copy this checklist and check off steps as you go.
 
 ```
 Progress:
-- [ ] 1. Gather context (dataset_path + which `supports_*` capabilities apply)
+- [ ] 1. Gather context (dataset_path now; `supports_*` capabilities after step 2, with evidence)
 - [ ] 2. Run python3 scripts/introspect.py on the dataset directory
 - [ ] 3. Load capability-specific guidance
 - [ ] 4. Auto-fill YAML from introspect output
@@ -42,10 +42,17 @@ Progress:
 
 ### 1. Gather context
 
-Ask the user, in this order:
+**Ask for the dataset path now.** Do not answer the capability questions
+below cold — first run step 2 (introspect), then come back and propose
+each `supports_*` answer with evidence from what introspection found,
+rather than interrogating the user blind before any evidence exists.
 
-- **Dataset path** — directory to document.
-- **Which capabilities does this dataset support?** Genesis v1.2 organizes fields into six capability containers. Ask Yes/No for each:
+- **Dataset path** — directory to document. Ask for this now.
+- **Which capabilities does this dataset support?** (ask this after step 2,
+  once introspection evidence is in hand — see the note at the end of
+  step 2). Genesis v1.2 organizes fields into six capability containers.
+  Propose a default for each, backed by an introspection finding, and ask
+  the user to confirm Yes/No:
   - `supports_discoverability` — **always Yes** (schema enforces this). Identification, description, project, release status, contacts, authorship. Minimum core fields.
   - `supports_accessibility` — Yes if the dataset is meant to be accessed/shared. Adds access policy, endpoints, dataset scale.
   - `supports_interoperability` — Yes if the dataset uses standard formats, structured features, controlled vocabularies, or has documented provenance. Adds data_structure, dates, semantic_layer, provenance, related_resources.
@@ -61,6 +68,13 @@ Run `python3 scripts/introspect.py <dataset_path>` and capture the JSON. See
 [references/introspection-commands.md](references/introspection-commands.md) for
 what each output field means.
 
+**Now return to the capability questions from step 1.** Propose an answer
+for each `supports_*` flag backed by an introspection finding — e.g., "I
+found a LICENSE file and CITATION.cff → I recommend
+`supports_reusability=Yes`. No `train/`/`test/` splits detected →
+`supports_ai_usability` optional." Confirm each with the user
+([Yes/No]) before moving on to step 3.
+
 ### 3. Load capability-specific guidance
 
 Read `references/capability-prompts.md` (the per-capability prompt sequence).
@@ -73,8 +87,24 @@ for cases where you need to understand a class definition.
 
 ### 4. Auto-fill the data card
 
-Read `references/genesis_v1.0_template.md` (the canonical template). Copy it
-as the starting point for the new datacard. Populate the YAML frontmatter
+Copy the template to the output filename **without reading it into
+context**:
+
+```bash
+cp skills/datacard-generator/references/genesis_v1.0_template.md <output_path>
+```
+
+Then edit the copied file with targeted `sed`/patch operations to fill YAML
+fields and markdown body regions — do NOT regenerate the entire file. Read
+only the sections you need to modify (typically the YAML frontmatter's ~880
+lines and specific markdown body sections via `sed -n 'START,ENDp'`). The
+template is over 130KB / ~35K tokens; a naive full read blows the context
+budget.
+
+**Where to save:** inside `<dataset_dir>/` by default; ask if the user
+prefers elsewhere. Compute the filename via the Filename rule (§8 below).
+
+Populate the YAML frontmatter
 using this decision table (paths use v2 capability-container structure):
 
 | Genesis field | Auto-fill if… | Otherwise |
@@ -121,14 +151,15 @@ If the user wants to indicate dataset readiness, ask them to set a level
 `dataset_readiness` YAML field in Genesis v1.2 — readiness is expressed
 through the combination of `supports_*` flags that are set to `"Yes"`.
 
-As a heuristic to guide the user:
+As a heuristic to guide the user (also expressible as a rough count of
+`supports_*` flags set to Yes: 1 typically maps to level 1, 2-3 to level 2,
+>= 4 to level 3):
 
 - 1 = Discoverable (metadata only; `supports_discoverability=Yes` + perhaps `accessibility`)
 - 2 = Interoperable & Reusable (also license, contacts, provenance; `supports_interoperability` and `supports_reusability`)
 - 3 = AI-Ready & Trustworthy (also semantic layer, integrity, governed use; `supports_ai_usability` or `supports_governed_use`)
 
-A heuristic: count how many `supports_*` are Yes; >= 4 typically maps to
-level 3, 2-3 maps to level 2, 1 maps to level 1. Confirm with the user.
+Confirm with the user.
 
 ### 6. Prompt for missing fields
 
@@ -180,6 +211,11 @@ For each lookup:
 - **Datacard incomplete** — API has fields the datacard doesn't; offer to add.
 - **Does not resolve** (404, error) — warn the user; likely typo.
 - **Rate-limited** — retry once; if still failing, log and move on.
+- **Widespread network failure** — if more than 2-3 lookups in a row fail
+  with connection/network errors (not per-ID 404s), stop enrichment, tell
+  the user that live enrichment could not run, and **mark the datacard as
+  unverified** in the review summary at step 11. Do not proceed to step 8
+  (write) with silently unverified identifiers.
 
 Present ALL findings from all identifiers to the user as a single
 consolidated table (see `references/live-enrichment.md` § Batching
@@ -237,6 +273,10 @@ Loop steps 6 → 7 → 8 → 9 until `--json` output has `"ok": true`. **Do not
 claim done with un-addressed errors.** `warn` severity findings can stand
 in the review summary but errors must be resolved.
 
+On loop-back to step 7, re-enrich ONLY identifiers the user added or
+changed in this iteration — do NOT re-check every identifier from scratch
+(see `references/live-enrichment.md` § Re-check-only-changed).
+
 ### 11. Review summary
 
 Present:
@@ -259,7 +299,11 @@ When the user asks to convert an existing MODCON v1 datacard:
    - `mapped` — fields the converter populated.
    - `missing_required` — Genesis fields the converter couldn't map. **Iterate over this list and prompt the user.**
    - `orphans` — v1 fields with no v2 equivalent.
-2. After prompting, rerun the converter or compose the final YAML inline.
+2. After prompting the user for the fields in `missing_required`, **compose
+   the final YAML inline** — apply the answered values to the converter's
+   `mapped` output. Do NOT rerun `convert_v1_to_genesis.py` after prompts;
+   the converter only reads the v1 source and cannot re-integrate user
+   answers.
 3. Set `discoverability.datacard.creation_method = "Hybrid"`, `template_version = "1.2"`, and ensure
    `change_log[0] = {change_date: today, datacard_version: "1.2", summary: "Converted from MODCON v1"}`.
 4. **Fill the markdown body** using `references/body-fill-guide.md`.
