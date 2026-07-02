@@ -44,7 +44,7 @@ grouped by capability so you can skip capabilities the user opted out of
 **`interoperability` (when `supports_interoperability=Yes`):**
 
 - Every `interoperability.related_resources.datasets[].identifier.value` (if `type: doi`)
-- Every `interoperability.related_resources.publications[].value` (if `type: doi` or `arxiv`)
+- Every `interoperability.related_resources.publications[].value` (if `type: doi` — the only `IdentifierTypeEnum` value cross-checked here)
 
 For each lookup, classify the outcome as one of: **Clean match** (silent
 pass), **Mismatch** (present both side-by-side, ask the user), **Datacard
@@ -55,6 +55,10 @@ not resolve** (404/error; warn the user — likely typo), or **Rate-limited**
 ---
 
 ## ORCID
+
+**Rate limit**: The public ORCID API (`pub.orcid.org`) has no published
+per-second limit but returns HTTP 429 under heavy load. Space calls at
+~1/sec to be safe. Persistent 429s should back off exponentially.
 
 ### Checksum verification (ISO 7064 MOD 11-2)
 
@@ -194,6 +198,11 @@ THEN present a single consolidated diff table to the user showing every
 mismatch, missing-field, and unresolvable ID at once. Do NOT interactively
 prompt after each individual lookup — that produces 15+ pauses per
 datacard and destroys the user experience.
+
+**Batched ≠ parallel.** Batch means "no user prompts between individual
+lookups"; you should still space calls to respect each API's rate limit
+(see the per-API sections below). Firing 15 WebFetch calls in parallel
+will trigger HTTP 429 on OSTI and burn through ROR's 5-min window.
 
 Consolidated table format:
 

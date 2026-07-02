@@ -85,12 +85,16 @@ Copy the template to the output filename **without reading it into
 context**:
 
 ```bash
-cp skills/datacard-generator/references/genesis_v1.0_template.md <output_path>
+# Use the ABSOLUTE path to the template (works regardless of your cwd).
+# If the skill is installed under ~/.claude/skills/, the path is
+# ~/.claude/skills/datacard-generator/references/genesis_v1.0_template.md.
+# In this repo, it's <repo_root>/skills/datacard-generator/references/genesis_v1.0_template.md.
+cp <template_absolute_path> <output_path>
 ```
 
 Then edit the copied file with targeted `sed`/patch operations to fill YAML
 fields and markdown body regions — do NOT regenerate the entire file. Read
-only the sections you need to modify (typically the YAML frontmatter's ~880
+only the sections you need to modify (typically the YAML frontmatter's ~1,140
 lines and specific markdown body sections via `sed -n 'START,ENDp'`). The
 template is over 130KB / ~35K tokens; a naive full read blows the context
 budget.
@@ -302,8 +306,9 @@ When the user asks to convert an existing MODCON v1 datacard:
    `change_log[0] = {change_date: today, datacard_version: "1.2", summary: "Converted from MODCON v1"}`.
 4. **Fill the markdown body** using `references/body-fill-guide.md`.
 5. **Cross-check every identifier via live APIs** (step 7 of the Generate path).
-6. Run the validator (step 9 of the Generate path).
-7. Present the review summary (step 11 of the Generate path).
+6. **Compute the filename and write the datacard** (step 8 of the Generate path).
+7. Run the validator (step 9 of the Generate path).
+8. Present the review summary (step 11 of the Generate path).
 
 ---
 
@@ -379,6 +384,7 @@ relationship requirement, etc.), see
 ## References
 
 - **Template (do not edit)**: [references/genesis_v1.0_template.md](references/genesis_v1.0_template.md)
+- **Upstream provenance**: https://gitlab.osti.gov/genesis/data-cards (vendored at commit `7226c2c`).
 - **Pydantic model** (validator source of truth): `scripts/genesis_models.py`
 - **Field-by-field guidance**: [references/genesis_field_guide.md](references/genesis_field_guide.md)
 - **Per-capability prompts**: [references/capability-prompts.md](references/capability-prompts.md)

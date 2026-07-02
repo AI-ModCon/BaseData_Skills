@@ -34,15 +34,25 @@ are not errors but should be flagged.
 - Paths checked (v2): `discoverability.workflow.state` ↔ `discoverability.release_status`
 - Legacy paths checked: `workflow.state` ↔ `release_status`
 
-## Why these aren't in the schema
+## Why these aren't in the Pydantic model
 
-JSON Schema is binary pass/fail; it has no severity levels. The filename rule
-is a cross-field invariant that JSON Schema *could* express via `allOf/if/then`
-but would be awkward (and the schema is auto-generated upstream — we can't add to it).
-The alignment rule is intentionally a recommendation, not a constraint — datacards
-in transitional states (e.g., `archived` but recently `published`) are valid.
+The Pydantic model at `scripts/genesis_models.py` is auto-generated from
+the upstream LinkML source and covers required fields, enums, and format
+patterns. It doesn't natively express:
+
+- **Severity levels.** Pydantic validators are binary pass/fail; the
+  filename mismatch and workflow/release_status misalignment are best
+  surfaced as warnings, not errors that block validation.
+- **Cross-field slug computation.** The filename rule requires computing
+  `snake_case(identification.name)` and comparing against `filename` —
+  possible via a `@model_validator`, but keeping this in the extras layer
+  avoids re-vendoring the Pydantic model every time the rule changes.
+- **Recommendation vs constraint.** The workflow/release alignment
+  describes typical (not required) pairings — datacards in transitional
+  states (`archived` but recently `published`) are valid.
 
 ## Adding new extras
 
-When upstream adds rules that JSON Schema can express, no change is needed here.
-For new warn-level rules: add a check in `check_extras()` and document it above.
+When upstream adds rules the Pydantic model can enforce (as required
+fields, enums, or patterns), no change is needed here. For new warn-level
+rules: add a check in `check_extras()` and document it above.

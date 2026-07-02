@@ -26,11 +26,11 @@ prompts:
         - path: discoverability.identification.version
           ask: "Dataset version (semver). Start at 1.0 if first release."
         - path: discoverability.identification.primary_id.type
-          ask: "Primary identifier type: doi | ark | handle | url | osti | local | unregistered | other."
+          ask: "Primary identifier type: doi | ark | handle | url | local | unregistered | purl | urn | uuid | other."
         - path: discoverability.identification.primary_id.value
           ask: "Primary identifier value (use ark, local, or unregistered pre-publication)."
         - path: discoverability.datacard.id.type
-          ask: "Datacard document identifier type: doi | ark | handle | url | osti | local | unregistered | other. Use 'local' pre-publication."
+          ask: "Datacard document identifier type: doi | ark | handle | url | local | unregistered | purl | urn | uuid | other. Use 'local' pre-publication."
         - path: discoverability.datacard.id.value
           ask: "Datacard document identifier value (distinct from the dataset's primary_id above; a slug is fine pre-publication)."
     - title: "Description"
