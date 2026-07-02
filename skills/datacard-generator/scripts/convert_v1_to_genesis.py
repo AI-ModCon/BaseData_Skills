@@ -365,9 +365,8 @@ def convert(v1: dict) -> ConversionReport:  # noqa: C901 (complexity OK for a ma
     if "dataset_readiness" in v1:
         orphans.insert(0, "dataset_readiness (dropped: no equivalent in Genesis v2)")
 
-    # Validator: use new JSON-Schema-driven validator, extract MISSING_REQUIRED codes
-    schema = vd.load_schema()
-    result = vd.validate(g, schema)
+    # Validator: use the Pydantic-model-driven validator, extract MISSING_REQUIRED codes
+    result = vd.validate(g)
     missing_required = sorted({f.field for f in result.findings if f.code == "MISSING_REQUIRED"})
 
     return ConversionReport(
