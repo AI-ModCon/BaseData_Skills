@@ -86,6 +86,8 @@ using this decision table (paths use v2 capability-container structure):
 | `discoverability.datacard.created_by[]` | always (AI model first if Hybrid; see Gotcha #4) | — |
 | `discoverability.identification.name` | from README / CITATION.cff title | prompt |
 | `discoverability.identification.version` | from CITATION.cff or default `"1.0"` | prompt |
+| `discoverability.product_type` | never — `ProductTypeEnum` (see `references/lookup-tables.md`) | always prompt |
+| `discoverability.datacard.id` | never — `IdentifierClass` (`{type: local, value: <slug>}` for pre-publication is a sensible default) | prompt |
 | `discoverability.dataset_description.dataset_summary` | from README first paragraph | prompt |
 | `discoverability.dataset_description.keywords` | from README / CITATION.cff | prompt |
 | `interoperability.data_structure.formats` | introspect.py `formats` | prompt (requires `supports_interoperability=Yes`) |
@@ -93,6 +95,7 @@ using this decision table (paths use v2 capability-container structure):
 | `interoperability.data_structure.splits` | introspect.py `splits_detected` | leave empty |
 | `accessibility.dataset_scale.record_count` / `.compressed_bytes` | introspect.py | prompt (requires `supports_accessibility=Yes`) |
 | `reusability.license.spdx_id` | introspect.py `license_hint` | prompt (requires `supports_reusability=Yes`) |
+| `reusability.license.name` | never | prompt whenever the `reusability.license` block is emitted (Pydantic requires it always, not just when `spdx_id=other`) |
 | `discoverability.authors[]` | from CITATION.cff (use **CRediT roles** — see `references/lookup-tables.md`) | prompt |
 | `reusability.citation.preferred_citation` | from CITATION.cff bibtex | prompt at `[pub]` |
 | `interoperability.provenance.was_generated_by` | always prompt (often forgotten) | — |

@@ -297,7 +297,13 @@ def convert(v1: dict) -> ConversionReport:  # noqa: C901 (complexity OK for a ma
           _titlecase(creation.get("creation_method", "Hybrid")))
     _setp(g, "discoverability.datacard.created_date",
           creation.get("created_date", today))
-    _setp(g, "discoverability.datacard.updated_date", today)
+    # updated_date is if_applicable, not required — leave unset on initial
+    # creation (see SKILL.md Gotcha #16). Only carry it forward if the
+    # source v1 card already had one; the change_log entry below captures
+    # the conversion date regardless.
+    v1_updated_date = creation.get("updated_date") or v1.get("updated_date")
+    if v1_updated_date:
+        _setp(g, "discoverability.datacard.updated_date", v1_updated_date)
     _setp(g, "discoverability.datacard.language", "en")
     _setp(g, "discoverability.datacard.change_log", [
         {"change_date": today, "datacard_version": "1.2", "summary": "Converted from MODCON v1"}

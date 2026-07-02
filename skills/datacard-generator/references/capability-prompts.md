@@ -29,6 +29,10 @@ prompts:
           ask: "Primary identifier type: doi | ark | handle | url | osti | local | unregistered | other."
         - path: discoverability.identification.primary_id.value
           ask: "Primary identifier value (use ark, local, or unregistered pre-publication)."
+        - path: discoverability.datacard.id.type
+          ask: "Datacard document identifier type: doi | ark | handle | url | osti | local | unregistered | other. Use 'local' pre-publication."
+        - path: discoverability.datacard.id.value
+          ask: "Datacard document identifier value (distinct from the dataset's primary_id above; a slug is fine pre-publication)."
     - title: "Description"
       fields:
         - path: discoverability.dataset_description.dataset_summary
@@ -49,11 +53,7 @@ prompts:
           ask: "Release status: Draft | Under_Review | Approved | Published | Deprecated."
         - path: discoverability.workflow.state
           ask: "Workflow state: Raw | Processing | QA | Analysis | Review | Embargo | Published | Archived | not_applicable."
-    - title: "Contact"
-      fields:
-        - path: discoverability.contact.agent_type
-          ask: "Contact agent type: person | organization."
-    - title: "Contact (person details if contact.agent_type=person)"
+    - title: "Contact person details"
       fields:
         - path: discoverability.contact.person.given_name
           ask: "Given (first) name."
@@ -61,8 +61,10 @@ prompts:
           ask: "Family (last) name."
         - path: discoverability.contact.person.email
           ask: "Email address for inquiries about this dataset."
+        - path: discoverability.contact.person.orcid
+          ask: "ORCID iD for the contact person, if known (optional)."
         - path: discoverability.contact.person.affiliation.name
-          ask: "Affiliation organization name."
+          ask: "Affiliation organization name (optional)."
     - title: "Creator agent details"
       fields:
         - path: discoverability.datacard.created_by[].creator.person.role
@@ -151,6 +153,8 @@ prompts:
       fields:
         - path: reusability.license.spdx_id
           ask: "SPDX license identifier (e.g., CC-BY-4.0, MIT, Apache-2.0). Use 'other' if not in SPDX, 'pending' if not yet assigned."
+        - path: reusability.license.name
+          ask: "Human-readable license name (e.g., 'Creative Commons Attribution 4.0 International'). Required whenever the license block is emitted, not just when spdx_id=other."
     - title: "Citation"
       fields:
         - path: reusability.citation.preferred_citation

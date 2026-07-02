@@ -221,18 +221,5 @@ def main(argv: list[str] | None = None) -> int:
     return 0 if result.ok else 1
 
 
-# ---------- Legacy compatibility shims (delete after test rewrite) ----------
-MISSING = object()
-def load_schema(*_a, **_kw): return None
-def load_rules(*_a, **_kw): return {}
-def expand_profile_required(*_a, **_kw): return []
-def check_required(*_a, **_kw): return []
-def check_enums(*_a, **_kw): return []
-def check_formats(*_a, **_kw): return []
-def check_conditional_required(*_a, **_kw): return []
-def check_cross_field(*_a, **_kw): return []
-def _walk_path_template(*_a, **_kw): return []
-
-
 if __name__ == "__main__":
     sys.exit(main())

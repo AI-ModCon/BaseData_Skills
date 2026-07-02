@@ -31,7 +31,7 @@ Capability gating: sections labelled `[capability_required]` or `[capability_if_
 | Markdown section | YAML source(s) | How to render | Required when |
 |---|---|---|---|
 | `# Datacard for ${DATASET_NAME}` | `discoverability.identification.name` | Literal substitution into H1 title | Always |
-| `**Last Updated**` | `datacard.updated_date` | ISO date (YYYY-MM-DD) | Always |
+| `**Last Updated**` | `discoverability.datacard.updated_date` | ISO date (YYYY-MM-DD) | Always |
 | `### Dataset Description` | `discoverability.dataset_description.dataset_summary` | Prose paragraph | `supports_discoverability=Yes` |
 | `## Keywords` | `discoverability.dataset_description.keywords` | Comma-separated list | `supports_discoverability=Yes` |
 | `### Security / Marking Considerations` | `discoverability.sensitivity.overall_sensitivity`, `discoverability.sensitivity.classified_status`, `discoverability.sensitivity.cui_status`, `discoverability.sensitivity.ucni_status` | Compose a sentence: "Overall sensitivity: `<overall>`. Classification: `<classified>`. CUI: `<cui>`. UCNI: `<ucni>`." Omit sub-fields that are `not_applicable`. | `supports_discoverability=Yes` |

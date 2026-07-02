@@ -420,14 +420,11 @@ Multi-valued in v2. The value `none` has been removed; omit the field or leave e
 
 ## People & organizations
 
-### Agent type (contact, authors, contributors, maintainer, evaluated_by)
+### Agent type (authors, contributors, `created_by[].creator`, `stewardship.maintainer`)
 
-All person/org references use `AgentClass` (tagged union — populate exactly one slot):
+All of these use `AgentClass` (tagged union — populate exactly one of `person` / `organization` / `ai_model` / `software`). See "`datacard.created_by[].creator` — AgentClass type slots" above for the full slot list and field guidance.
 
-| Slot | When to use |
-|---|---|
-| `person` | Named individual — fill `given_name`, `family_name`, `email`, `orcid`, `affiliation` |
-| `organization` | Team or org without a single named contact — fill `name` and `ror_id` |
+**Exception — `discoverability.contact` is `person`-only.** `ContactClass` has no type discriminator: it has a required `person` sub-object plus optional `valid_until` and `succession_note`. Do not prompt for an agent type when filling contact — go straight to `discoverability.contact.person.*`.
 
 ### `RoleEnum` — CRediT taxonomy (authors, contributors, facilities, ai_models, software)
 

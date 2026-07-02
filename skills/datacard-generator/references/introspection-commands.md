@@ -1,6 +1,6 @@
 # Introspection commands
 
-Reference for auto-filling Genesis Mission Datacard v1.0 fields by
+Reference for auto-filling Genesis Mission Datacard v1.2 fields by
 inspecting a dataset directory. The script `scripts/introspect.py` does
 the common work; this doc covers (1) the script's JSON output and how it
 maps to datacard fields, (2) commands for formats the script doesn't
@@ -21,15 +21,15 @@ Emits JSON to stdout. Stdlib-only; cross-platform (Windows, macOS, Linux).
 | JSON key | Type | Maps to (Genesis field) | Notes |
 |---|---|---|---|
 | `path` | string | — | Echoed for confirmation; not a datacard field |
-| `file_count` | int | `dataset_scale.record_count` (when file-based) | Use `record_unit: files` |
-| `total_bytes` | int | `dataset_scale.compressed_bytes` (use as-is for stored size) | The script does not distinguish compressed vs uncompressed — see § 4 for that |
-| `formats` | list of strings | `dataset_info.formats` | Recognized extensions (CSV/HDF5/Parquet/NetCDF4/TIFF/PNG/JPEG/Text/Markdown/NumPy/Pickle/PyTorch/JSON/YAML/Arrow/TSV) |
-| `sample_columns` | dict (filename → list of strings) | `dataset_info.features` (flat form) | First-row column names from up to 3 CSVs |
+| `file_count` | int | `accessibility.dataset_scale.record_count` (when file-based) | Use `record_unit: files` |
+| `total_bytes` | int | `accessibility.dataset_scale.compressed_bytes` (use as-is for stored size) | The script does not distinguish compressed vs uncompressed — see § 4 for that |
+| `formats` | list of strings | `interoperability.data_structure.formats` | Recognized extensions (CSV/HDF5/Parquet/NetCDF4/TIFF/PNG/JPEG/Text/Markdown/NumPy/Pickle/PyTorch/JSON/YAML/Arrow/TSV) |
+| `sample_columns` | dict (filename → list of strings) | `interoperability.data_structure.features` (flat form) | First-row column names from up to 3 CSVs |
 | `readme_file` | string path | (use to extract `description.summary`, `description.keywords`) | First `README*` at depth ≤ 2 |
 | `license_file_present` | bool | (gates `license.spdx_id` prompt) | True if any `LICENSE*` or `COPYING*` at depth ≤ 2 |
 | `license_hint` | string | (use to guess `license.spdx_id`) | First 5 non-empty lines of the license file, joined; max 200 chars |
 | `citation_file` | string path | (use to extract `authors[]`, `citation.preferred_citation`) | First `CITATION*` at depth ≤ 2 |
-| `splits_detected` | list of strings | `dataset_info.splits` | Subdirs named train/test/val/validation at depth ≤ 3 |
+| `splits_detected` | list of strings | `interoperability.data_structure.splits` | Subdirs named train/test/val/validation at depth ≤ 3 |
 
 ### What introspect.py does NOT cover
 
@@ -59,7 +59,7 @@ head -n 5 "$FILE"                  # sample rows for type inference
 wc -l "$FILE"                      # row count (record_count for tabular)
 ```
 
-Maps to: `dataset_info.features` (flat list for core/extended; for ai_ready use the structured form — see § 3.8).
+Maps to: `interoperability.data_structure.features` (flat list by default; when `supports_ai_usability=Yes` use the structured form — see § 3.8).
 
 ### HDF5
 
@@ -69,7 +69,7 @@ h5dump -H "$FILE"                  # header (datatypes, dimensions, attributes)
 h5dump -A -o /dev/null "$FILE" | head -200   # attributes summary
 ```
 
-Maps to: `dataset_info.features` (dataset names), `dataset_info.spatial_coverage` / `temporal_coverage` if dimensions hint at them, `semantic_layer.schema_url` (if attributes reference a schema).
+Maps to: `interoperability.data_structure.features` (dataset names), `interoperability.data_structure.spatial_coverage` / `temporal_coverage` if dimensions hint at them, `semantic_layer.schema_url` (if attributes reference a schema).
 
 If h5tools aren't installed, use Python:
 
@@ -90,7 +90,7 @@ Or via Python (pyarrow):
 python3 -c "import pyarrow.parquet as pq; t=pq.read_table('$FILE'); print(t.schema)"
 ```
 
-Maps to: `dataset_info.features` (structured — name + type + nullable).
+Maps to: `interoperability.data_structure.features` (structured — name + type + nullable).
 
 ### NetCDF
 
@@ -105,7 +105,7 @@ Or via Python (netCDF4):
 python3 -c "import netCDF4 as nc; ds=nc.Dataset('$FILE'); print(ds.variables.keys()); print(ds.dimensions)"
 ```
 
-Maps to: `dataset_info.features` (variable names), `dataset_info.spatial_coverage` (lat/lon bounding box from coordinate variables), `dataset_info.temporal_coverage` (time variable bounds), `semantic_layer.semantic_context` (CF conventions if `Conventions` global attribute is present).
+Maps to: `interoperability.data_structure.features` (variable names), `interoperability.data_structure.spatial_coverage` (lat/lon bounding box from coordinate variables), `interoperability.data_structure.temporal_coverage` (time variable bounds), `semantic_layer.semantic_context` (CF conventions if `Conventions` global attribute is present).
 
 ### JSON / YAML
 
@@ -115,7 +115,7 @@ python3 -c "import json; print(list(json.load(open('$FILE')).keys()))"
 python3 -c "import yaml; print(list(yaml.safe_load(open('$FILE')).keys()))"
 ```
 
-Maps to: `dataset_info.features` (top-level keys), `dataset_info.schema_version` (if a `version` or `schema_version` key is present).
+Maps to: `interoperability.data_structure.features` (top-level keys), `interoperability.data_structure.schema_version` (if a `version` or `schema_version` key is present).
 
 ### NumPy (`.npy`, `.npz`)
 
@@ -124,7 +124,7 @@ python3 -c "import numpy as np; a=np.load('$FILE'); print(a.shape, a.dtype)"
 python3 -c "import numpy as np; z=np.load('$FILE'); print(z.files)"   # for .npz archives
 ```
 
-Maps to: `dataset_info.features` (array name for .npz, single-array shape for .npy), `dataset_scale.record_count` (first dim of array).
+Maps to: `interoperability.data_structure.features` (array name for .npz, single-array shape for .npy), `accessibility.dataset_scale.record_count` (first dim of array).
 
 ### PyTorch (`.pt`, `.pth`)
 
@@ -140,7 +140,7 @@ Maps to: `object_type: model` likely; the file is usually a state_dict for a mod
 python3 -c "import pyarrow as pa, pyarrow.ipc as ipc; r=ipc.open_file('$FILE'); print(r.schema); print('rows:', r.num_record_batches)"
 ```
 
-Maps to: `dataset_info.features` (structured), `dataset_scale.record_count`.
+Maps to: `interoperability.data_structure.features` (structured), `accessibility.dataset_scale.record_count`.
 
 ### Images (TIFF, PNG, JPEG)
 
@@ -156,7 +156,7 @@ identify "$DIR"/*.png | awk '{print $3}' | sort -u                       # uniqu
 find "$DIR" -type f \( -iname '*.png' -o -iname '*.tif' \) | wc -l       # image count
 ```
 
-Maps to: `dataset_info.modalities: [image]`, `dataset_scale.record_count` (image count), `dataset_info.features` (per-image structured: width/height/channels).
+Maps to: `interoperability.data_structure.modalities: [image]`, `accessibility.dataset_scale.record_count` (image count), `interoperability.data_structure.features` (per-image structured: width/height/channels).
 
 ---
 
@@ -263,7 +263,7 @@ Common patterns to detect from `license_hint` (the first 5 lines of the license 
 
 **Always confirm the guess with the user** before writing — license attribution is high-stakes.
 
-### 3.5 Modality inference (for `dataset_info.modalities`)
+### 3.5 Modality inference (for `interoperability.data_structure.modalities`)
 
 Infer from `formats` and per-file inspection:
 
@@ -279,7 +279,7 @@ Infer from `formats` and per-file inspection:
 | LAS / PLY / PCD | `point-cloud` |
 | Multiple of the above | `multimodal` |
 
-### 3.6 Encoding detection (for `dataset_info.encoding`)
+### 3.6 Encoding detection (for `interoperability.data_structure.encoding`)
 
 ```bash
 file -bi "$FILE"                                     # macOS/Linux: shows charset=
@@ -303,11 +303,11 @@ find "$DIR" -maxdepth 2 -type f -name '*.csv' | \
   grep -oE 'train|test|val(idation)?' | sort -u
 ```
 
-Maps to: `dataset_info.splits`.
+Maps to: `interoperability.data_structure.splits`.
 
-### 3.8 Structured `features` (for `ai_ready` profile)
+### 3.8 Structured `features` (for `supports_ai_usability=Yes` datacards)
 
-When the profile is `ai_ready`, `dataset_info.features` should be structured objects, not flat strings. For a CSV:
+When `supports_ai_usability=Yes`, `interoperability.data_structure.features` should be structured objects, not flat strings. For a CSV:
 
 ```bash
 python3 - <<'PY'
@@ -328,13 +328,13 @@ for col in rows[0].keys():
 PY
 ```
 
-Maps to: structured `dataset_info.features:` entries with `name`, `type`, optionally `unit`, `description`, `range`.
+Maps to: structured `interoperability.data_structure.features:` entries with `name`, `type`, optionally `unit`, `description`, `range`.
 
 ---
 
 ## 4. Uncompressed vs compressed bytes
 
-`introspect.py` emits `total_bytes` from `stat()` — that's the stored size on disk (compressed if the files are compressed). For `dataset_scale.uncompressed_bytes`, you need to extract first:
+`introspect.py` emits `total_bytes` from `stat()` — that's the stored size on disk (compressed if the files are compressed). For `accessibility.dataset_scale.uncompressed_bytes`, you need to extract first:
 
 ```bash
 # Total size of all .gz files when uncompressed:
@@ -358,10 +358,10 @@ If files aren't compressed at all, `uncompressed_bytes == compressed_bytes` (set
 
 When `introspect.py` runs cleanly on a typical dataset directory, these Genesis fields can be pre-filled without prompting:
 
-- `dataset_info.formats` (from `formats`)
-- `dataset_info.features` flat-form (from `sample_columns` for CSVs)
-- `dataset_info.splits` (from `splits_detected`)
-- `dataset_scale.record_count` (from `file_count`)
-- `dataset_scale.compressed_bytes` (from `total_bytes`)
+- `interoperability.data_structure.formats` (from `formats`)
+- `interoperability.data_structure.features` flat-form (from `sample_columns` for CSVs)
+- `interoperability.data_structure.splits` (from `splits_detected`)
+- `accessibility.dataset_scale.record_count` (from `file_count`)
+- `accessibility.dataset_scale.compressed_bytes` (from `total_bytes`)
 
 Everything else requires either (a) running the manual commands in § 2–3, (b) parsing CITATION.cff/README/LICENSE per § 3.2–3.4, or (c) prompting the user.
