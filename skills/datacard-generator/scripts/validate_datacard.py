@@ -12,7 +12,7 @@ and required fields. This module:
 5. Emits structured findings via JSON (--json) or human-readable text.
 
 To re-sync with upstream, re-vendor `genesis_models.py`, `genesis_datacard.schema.json`,
-`genesis_datacard_linkml.yaml`, and `genesis_v1.0_template.md` from the same upstream commit
+and `genesis_v1.0_template.md` from the same upstream commit
 (see `references/UPSTREAM_VERSION.md`).
 """
 

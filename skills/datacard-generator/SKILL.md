@@ -82,9 +82,6 @@ Read `references/capability-prompts.md` (the per-capability prompt sequence).
 For deep field-by-field explanation, load the relevant section of
 `references/genesis_field_guide.md` only as needed (the file is large).
 
-The upstream LinkML schema source is at `references/genesis_datacard_linkml.yaml`
-for cases where you need to understand a class definition.
-
 ### 4. Auto-fill the data card
 
 Copy the template to the output filename **without reading it into
@@ -385,9 +382,7 @@ relationship requirement, etc.), see
 ## References
 
 - **Template (do not edit)**: [references/genesis_v1.0_template.md](references/genesis_v1.0_template.md)
-- **Template YAML reference**: [references/genesis_v1.0_template.yaml](references/genesis_v1.0_template.yaml)
 - **Pydantic model** (validator source of truth): `scripts/genesis_models.py`
-- **LinkML schema source**: `references/genesis_datacard_linkml.yaml`
 - **JSON Schema** (parallel reference, not the primary validator source): `references/genesis_datacard.schema.json`
 - **Field-by-field guidance**: [references/genesis_field_guide.md](references/genesis_field_guide.md)
 - **Per-capability prompts**: [references/capability-prompts.md](references/capability-prompts.md)
