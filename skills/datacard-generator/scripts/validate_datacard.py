@@ -11,9 +11,8 @@ and required fields. This module:
    that the schema doesn't express.
 5. Emits structured findings via JSON (--json) or human-readable text.
 
-To re-sync with upstream, re-vendor `genesis_models.py`, `genesis_datacard.schema.json`,
-and `genesis_v1.0_template.md` from the same upstream commit
-(see `references/UPSTREAM_VERSION.md`).
+To re-sync with upstream, re-vendor `scripts/genesis_models.py` and
+`references/genesis_v1.0_template.md` from the same upstream commit.
 """
 
 from __future__ import annotations

@@ -15,11 +15,8 @@ The skill also has a one-shot **Convert** path for migrating an existing
 MODCON v1 datacard to Genesis v1.2.
 
 **Validation is driven by the upstream Pydantic model** (`scripts/genesis_models.py`)
-applied via `scripts/validate_datacard.py`. The JSON Schema at
-`references/genesis_datacard.schema.json` is a parallel reference (also
-generated from the LinkML source) for tools that prefer JSON Schema; it is
-NOT the primary validator source. The few warn-level rules the schema
-cannot express live in `references/validation-rules.md`.
+applied via `scripts/validate_datacard.py`. The few warn-level rules the
+model cannot express live in `references/validation-rules.md`.
 
 ## Workflow
 
@@ -337,8 +334,8 @@ relationship requirement, etc.), see
 
 5. **`change_log` is append-only.** On re-runs, add a new entry plus
    `updated_date` bump. Never edit or delete prior entries. The field
-   name inside each entry is `datacard_version` (see UPSTREAM_VERSION.md
-   for the upstream typo we patched).
+   name inside each entry is `datacard_version` (patched locally from an
+   upstream typo).
 
 6. **`_repository` block is system-owned.** Do not populate. Leave it
    as-is in the template (the underscore prefix is the parser signal).
@@ -383,7 +380,6 @@ relationship requirement, etc.), see
 
 - **Template (do not edit)**: [references/genesis_v1.0_template.md](references/genesis_v1.0_template.md)
 - **Pydantic model** (validator source of truth): `scripts/genesis_models.py`
-- **JSON Schema** (parallel reference, not the primary validator source): `references/genesis_datacard.schema.json`
 - **Field-by-field guidance**: [references/genesis_field_guide.md](references/genesis_field_guide.md)
 - **Per-capability prompts**: [references/capability-prompts.md](references/capability-prompts.md)
 - **Body-fill guide**: [references/body-fill-guide.md](references/body-fill-guide.md)
@@ -391,7 +387,6 @@ relationship requirement, etc.), see
 - **Validation extras** (warn-level rules): [references/validation-rules.md](references/validation-rules.md)
 - **Live ORCID/ROR/OSTI enrichment**: [references/live-enrichment.md](references/live-enrichment.md)
 - **Introspection commands**: [references/introspection-commands.md](references/introspection-commands.md)
-- **Upstream provenance / vendor manifest**: [references/UPSTREAM_VERSION.md](references/UPSTREAM_VERSION.md)
 - **Validator**: `scripts/validate_datacard.py`
 - **Introspector**: `scripts/introspect.py`
 - **Converter**: `scripts/convert_v1_to_genesis.py`

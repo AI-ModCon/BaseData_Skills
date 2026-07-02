@@ -1,11 +1,12 @@
 # Validation extras
 
-The bulk of Genesis Datacard validation lives in
-`references/genesis_datacard.schema.json` (upstream-vendored JSON Schema, draft 2019-09)
-and is applied automatically by `scripts/validate_datacard.py`.
+The bulk of Genesis Datacard validation lives in the upstream Pydantic model
+(`scripts/genesis_models.py`) and is applied automatically by
+`scripts/validate_datacard.py`.
 
-This file documents the **handful of rules JSON Schema cannot express** — they
-live in the validator's `check_extras()` function (`scripts/validate_datacard.py`).
+This file documents the **handful of rules the Pydantic model cannot
+express** — they live in the validator's `check_extras()` function
+(`scripts/validate_datacard.py`).
 
 ## Filename rule (warn)
 

@@ -10,7 +10,7 @@ The skill's workflow step 7 ("Cross-check identifiers via live APIs") resolves e
 
 Treat every resolved value as a candidate for cross-check, not as authoritative. When the API returns a value that conflicts with the datacard, **present both to the user** rather than silently overwriting.
 
-**Format validation** (ORCID/ROR regex patterns) lives in `references/genesis_datacard.schema.json` (e.g. the `orcid` and `ror_id` field `pattern` entries) and is enforced automatically by `scripts/validate_datacard.py`. `references/validation-rules.md` covers only the warn-level extras JSON Schema can't express (filename alignment, workflow↔release_status alignment). This doc covers the unique value-add: checksum verification, live API endpoints, and DOE-specific OSTI guidance.
+Format validation (ORCID/ROR regex patterns) lives in the Pydantic model at `scripts/genesis_models.py` (e.g., `PersonClass.orcid` and `AffiliationClass.ror_id` field patterns) and is enforced automatically by `scripts/validate_datacard.py`. This doc covers only the unique value-add: checksum verification, live API endpoints, DOE-specific OSTI guidance, and rate-limit compliance.
 
 ---
 
@@ -108,7 +108,7 @@ Requests to the version-less path (`https://api.ror.org/organizations/{id}`) now
 
 ### Storage convention
 
-ROR identifiers are stored in **URL form** (`https://ror.org/XXXXXXX`) per the Genesis template. The format regex is in `references/genesis_datacard.schema.json`. When a user provides a bare 9-character ID (e.g., `03yrm5c26`), prepend `https://ror.org/` before storing.
+ROR identifiers are stored in **URL form** (`https://ror.org/XXXXXXX`) per the Genesis template. The format regex is in `scripts/genesis_models.py` (`AffiliationClass.ror_id`). When a user provides a bare 9-character ID (e.g., `03yrm5c26`), prepend `https://ror.org/` before storing.
 
 ### Live Lookup
 

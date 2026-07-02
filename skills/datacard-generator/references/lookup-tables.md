@@ -1,7 +1,7 @@
 # Lookup tables
 
 Human-readable reference for every fixed-vocabulary field in Genesis Datacard v2.
-The canonical source for all enum values is `references/genesis_datacard.schema.json`.
+The canonical source for all enum values is `scripts/genesis_models.py`.
 Load the relevant section when prompting for a constrained field.
 
 ---
