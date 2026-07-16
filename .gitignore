@@ -6,3 +6,6 @@ __pycache__/
 
 # Local virtual environments
 .venv*
+
+# Skill tests live on developer disk only — not part of the shipped skill
+skills/*/tests/
